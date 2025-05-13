@@ -87,7 +87,7 @@ export class AiAgentController {
       const data = await this.aiDealerAgentService.getAgentFarmData(
         body.walletAddress,
       );
-      const result = await this.aiAgentService.initializeFarmerAgent(
+      const result = await this.aiAgentService.initialize(
         body.walletAddress,
         data ? data.isFarming : false,
       );
@@ -114,7 +114,7 @@ export class AiAgentController {
       const data = await this.aiDealerAgentService.getAgentFarmData(
         body.walletAddress,
       );
-      const result = await this.aiAgentService.handlePlayerMessage(
+      const result = await this.aiAgentService.handleMessage(
         body.walletAddress,
         body.message,
         data ? data.isFarming : false,
@@ -180,7 +180,7 @@ export class AiAgentController {
         duration: data.duration,
         itemCounts: itemCounts,
       });
-      const result = await this.aiDealerAgentService.startNewHagniNegotiation(
+      const result = await this.aiDealerAgentService.initialize(
         body.walletAddress,
         {
           baseValue: 100,
@@ -217,7 +217,7 @@ export class AiAgentController {
   async hagniChat(@Body() body: ChatDto): Promise<any> {
     try {
       console.log('Running negotiation example...');
-      const result = await this.aiDealerAgentService.handlePlayerMessage(
+      const result = await this.aiDealerAgentService.handleMessage(
         body.walletAddress,
         body.message,
       );
@@ -231,10 +231,11 @@ export class AiAgentController {
         await this.aiDealerAgentService.updateAgentFarmData(body.walletAddress, {
           isFarming: false,
           startTime: 0,
-          duration: 0
+          duration: 0,
+          itemCounts: null,
         });
-        this.aiDealerAgentService.clearNegotiationState(body.walletAddress);
-        await this.aiAgentService.stopAgent(body.walletAddress);
+        this.aiDealerAgentService.reset(body.walletAddress);
+        await this.aiAgentService.reset(body.walletAddress);
       }
       return result;
     } catch (error) {
@@ -268,7 +269,7 @@ export class AiAgentController {
         duration: 0,
         itemCounts: null,
       });
-      this.aiDealerAgentService.clearNegotiationState(body.walletAddress);
+      this.aiDealerAgentService.reset(body.walletAddress);
       return { message: 'Negotiation ended successfully' };
     } catch (error) {
       console.error('Error ending negotiation:', error);
