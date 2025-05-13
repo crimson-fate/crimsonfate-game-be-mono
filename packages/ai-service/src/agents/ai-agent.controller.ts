@@ -84,8 +84,12 @@ export class AiAgentController {
   })
   async startChatting(@Body() body: ChatDto): Promise<any> {
     try {
+      const data = await this.aiDealerAgentService.getAgentFarmData(
+        body.walletAddress,
+      );
       const result = await this.aiAgentService.initializeFarmerAgent(
         body.walletAddress,
+        data ? data.isFarming : false,
       );
       console.log(result);
       return result;
@@ -107,9 +111,13 @@ export class AiAgentController {
   async normalChat(@Body() body: ChatDto): Promise<any> {
     try {
       console.log('Running negotiation example...');
+      const data = await this.aiDealerAgentService.getAgentFarmData(
+        body.walletAddress,
+      );
       const result = await this.aiAgentService.handlePlayerMessage(
         body.walletAddress,
         body.message,
+        data ? data.isFarming : false,
       );
       return result;
     } catch (error) {
@@ -121,25 +129,25 @@ export class AiAgentController {
     }
   }
 
-  @Post('normal/end')
-  @ApiOperation({ summary: 'End the chat' })
-  @ApiResponse({
-    status: 200,
-    description: 'Chat ended successfully',
-  })
-  async endChat(@Body() body: WalletDto): Promise<any> {
-    try {
-      console.log('Ending chat...');
-      const result = await this.aiAgentService.stopAgent();
-      return result;
-    } catch (error) {
-      console.error('Error ending chat:', error);
-      throw new HttpException(
-        'An error occurred while processing your request',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+  // @Post('normal/end')
+  // @ApiOperation({ summary: 'End the chat' })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Chat ended successfully',
+  // })
+  // async endChat(@Body() body: WalletDto): Promise<any> {
+  //   try {
+  //     console.log('Ending chat...');
+  //     const result = await this.aiAgentService.stopAgent();
+  //     return result;
+  //   } catch (error) {
+  //     console.error('Error ending chat:', error);
+  //     throw new HttpException(
+  //       'An error occurred while processing your request',
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
 
   @Post('dealer/start')
   @ApiOperation({ summary: 'Start dealing with agent' })
@@ -219,6 +227,14 @@ export class AiAgentController {
         );
         result.itemCounts = data.itemCounts;
         result.extractedOffer = result.extractedOffer;
+
+        await this.aiDealerAgentService.updateAgentFarmData(body.walletAddress, {
+          isFarming: false,
+          startTime: 0,
+          duration: 0
+        });
+        this.aiDealerAgentService.clearNegotiationState(body.walletAddress);
+        await this.aiAgentService.stopAgent(body.walletAddress);
       }
       return result;
     } catch (error) {
@@ -252,7 +268,7 @@ export class AiAgentController {
         duration: 0,
         itemCounts: null,
       });
-      this.aiDealerAgentService.stopAgent();
+      this.aiDealerAgentService.clearNegotiationState(body.walletAddress);
       return { message: 'Negotiation ended successfully' };
     } catch (error) {
       console.error('Error ending negotiation:', error);
