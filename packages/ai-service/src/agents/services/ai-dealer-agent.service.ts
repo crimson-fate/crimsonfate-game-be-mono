@@ -55,6 +55,7 @@ interface HagniNegotiationState {
   lastPlayerRawMessage: string | null; // Stores the raw message from the player
   negotiationActive: boolean;
   uniqueNegotiationId: string;
+  playerMoney: number; // Add player's current money (redstone)
 }
 
 // --- NestJS Service ---
@@ -80,6 +81,11 @@ export class AiDealerAgentService {
         itemCountsByRarity: z.record(z.string(), z.number().int()).optional(),
         minSellRatio: z.number().min(0).max(1).optional(),
         maxDiscount: z.number().min(0).max(1).optional(),
+        playerMoney: z
+          .number()
+          .nonnegative()
+          .describe("The player's current money (redstone)")
+          .optional(),
       }),
 
       key({ uniqueNegotiationId }) {
@@ -97,7 +103,8 @@ export class AiDealerAgentService {
           !args.itemCountsByRarity ||
           !args.minSellRatio ||
           !args.maxDiscount ||
-          !args.uniqueNegotiationId
+          !args.uniqueNegotiationId ||
+          args.playerMoney === undefined // Require playerMoney
         ) {
           throw new Error(
             `Cannot create negotiation context ${args.uniqueNegotiationId}: Missing required arguments.`,
@@ -135,6 +142,7 @@ export class AiDealerAgentService {
           lastPlayerRawMessage: null, // Initialize as null
           negotiationActive: true,
           uniqueNegotiationId: args.uniqueNegotiationId,
+          playerMoney: args.playerMoney, // Store player's money
         };
       },
 
@@ -159,13 +167,16 @@ export class AiDealerAgentService {
         *   Use 'hagniResponseOutput' with outcome 'asking'.
     4.  **Haggling with Heroes (Offer Processing)**:
         *   Analyze the player's message: '{{lastPlayerRawMessage}}'.
+        *   **Detect End/Stop/No-Buy Intent**: If the player's message clearly indicates they do not want to buy, want to stop negotiating, or want to end the conversation (e.g., "I don't want it", "no thanks", "stop", "not interested", "goodbye", "maybe later", etc.), immediately end the negotiation. Respond politely, acknowledge their decision, and set the negotiation outcome to 'ended' in 'hagniResponseOutput'.
         *   **Extract Offer**: Look for a clear numerical offer (e.g., "I'll give you 50", "how about 75 gold?", "55?"). If found, \`extractedOffer\` is that number. If ambiguous, assume no offer.
         *   **No Clear Offer / Just Chatting**:
             *   Respond naturally and cheerfully. If they asked a question, answer it with flair.
             *   If they're just talking, you can gently nudge them. Example: "So, what do you think of these {{itemDescription}}? They didn't just jump into my bag, you know! My current asking price is {{currentAskingPrice}} gold."
             *   Use 'hagniResponseOutput' with outcome 'informing' or 'asking'.
         *   **Offer Found (extractedOffer)**:
-            *   **Generous Offer! (extractedOffer >= {{currentAskingPrice}})**: Excellent! Accept with enthusiasm.
+            *   **Generous Offer! (extractedOffer >= {{currentAskingPrice}})**: Excellent! **BUT FIRST, check if the player has enough money ({{playerMoney}} redstone).**
+                *   If extractedOffer > playerMoney: Politely inform the player they do not have enough redstone to complete the deal, and do not accept. Example: "Ah, that's a fine offer, but it seems your coin purse is a bit light for that amount. Perhaps a smaller offer, or come back when you have more redstone?"
+                *   If extractedOffer <= playerMoney: Accept with enthusiasm.
                 *   Example: "{{extractedOffer}} gold? A splendid choice! You've got a keen eye for quality. They're all yours!"
                 *   Mark negotiation as ended. Use 'hagniResponseOutput' with outcome 'accepted'.
             *   **Too Modest an Offer (extractedOffer < {{minAcceptablePrice}})**: Politely decline, emphasizing the item's value or the effort involved, without revealing your \`minAcceptablePrice\`.
@@ -184,6 +195,7 @@ export class AiDealerAgentService {
     Calculated Base Value: {{calculatedValue}} gold
     Minimum Acceptable Price: {{minAcceptablePrice}} gold (Non-negotiable floor)
     Your Current Asking Price: {{currentAskingPrice}} gold
+    Player's Redstone (Money): {{playerMoney}}
     Player's Last Message: {{lastPlayerRawMessageFormatted}}
     Negotiation Active: {{negotiationActive}}
 
@@ -214,6 +226,7 @@ export class AiDealerAgentService {
             : 'No message yet',
           negotiationActive: hagniState.negotiationActive,
           taskDescription: taskDescription,
+          playerMoney: hagniState.playerMoney,
           extractedOffer: undefined,
         });
       },
@@ -420,6 +433,7 @@ export class AiDealerAgentService {
       minSellRatio: number;
       maxDiscount: number;
     },
+    playerMoney: number, // Add playerMoney argument
   ): Promise<void> {
     while (true) {
       try {
@@ -453,22 +467,13 @@ export class AiDealerAgentService {
             itemCountsByRarity: itemData.itemCounts,
             minSellRatio: 0.75, // Example: Hagni won't go below 75% of calculated value
             maxDiscount: 0.15, // Example: Hagni offers max 15% discount per counter-offer step
+            playerMoney: playerMoney, // Pass player's money
           },
           config: {
             allowActions: true,
             allowOutputs: true,
             temperature: this.config.temperature,
-            maxTokens: this.config.maxTokens,
-            stop: [
-              '</response>',
-              '</reasoning>',
-              '```',
-              '\\n',
-              'The current context',
-              'Given that',
-              'Based on',
-              'As an AI',
-            ],
+            maxTokens: this.config.maxTokens
           },
         });
         response = parseAgentResponse(response);
@@ -507,6 +512,7 @@ export class AiDealerAgentService {
   public async handleMessage(
     negotiationId: string,
     message: string,
+    playerMoney: number, // Add playerMoney argument
   ): Promise<any> {
     try {
       simpleUI.logMessage(
@@ -520,6 +526,7 @@ export class AiDealerAgentService {
           type: 'hagniNegotiation',
           uniqueNegotiationId: negotiationId,
           playerMessage: message,
+          playerMoney: playerMoney, // Pass player's money
         },
         input: {
           type: 'custom:playerMessage',
@@ -548,7 +555,7 @@ export class AiDealerAgentService {
   }
 
   public async reset(negotiationId: string): Promise<void> {
-    await this.agent.deleteContext('hagniNegotiation:', negotiationId);
+    await this.agent.deleteContext('hagniNegotiation:' + negotiationId);
   }
 
   public async getAgentFarmData(
