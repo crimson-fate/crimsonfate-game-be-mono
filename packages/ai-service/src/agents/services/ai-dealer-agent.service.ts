@@ -9,7 +9,6 @@ import {
   extension,
   output,
   input,
-  type AnyAgent,
   createVectorStore,
 } from '@daydreamsai/core';
 
@@ -302,12 +301,14 @@ export class AiDealerAgentService {
                   .describe('The logical outcome of this turn based on rules.'),
                 extractedOffer: z
                   .number()
+                  .nullable()
                   .optional()
                   .describe(
                     "The numerical offer extracted from the player's message.",
                   ),
                 counterPrice: z
                   .number()
+                  .nullable()
                   .optional()
                   .describe(
                     "The new price Hagni is offering if outcome is 'countered'.",
