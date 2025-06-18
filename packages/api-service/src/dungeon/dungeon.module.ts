@@ -9,6 +9,7 @@ import {
   PlayerProgressSchema,
 } from '@app/shared/models/schema/player-progress.schema';
 import { PlayersService } from '../players/players.service';
+import { Web3Service } from '@app/web3';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { PlayersService } from '../players/players.service';
       { name: PlayerProgress.name, schema: PlayerProgressSchema },
     ]),
   ],
-  providers: [DungeonService, PlayersService],
+  providers: [DungeonService, PlayersService, Web3Service],
   controllers: [DungeonController],
 })
 export class DungeonModule {}

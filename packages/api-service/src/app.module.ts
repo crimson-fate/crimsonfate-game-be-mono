@@ -16,12 +16,21 @@ import { FallbackController } from './fallback.controller';
 import { InventoryModule } from './inventory/inventory.module';
 import { DungeonModule } from './dungeon/dungeon.module';
 import { PlayerResourceModule } from './player-resource/player-resource.module';
+import { PlayersModule } from './players/players.module';
+import { JwtModule } from '@nestjs/jwt';
+import { GemModule } from './gem/gem.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     MongooseModule.forRoot(configuration().MONGODB_URI),
-
+    JwtModule.register({
+      secret: configuration().JWT_SECRET,
+      signOptions: {
+        expiresIn: configuration().JWT_EXPIRE,
+      },
+      global: true,
+    }),
     ServeStaticModule.forRoot({
       rootPath: resolve(__dirname, 'public'), // 😬 fragile
       serveRoot: '/',
@@ -36,6 +45,8 @@ import { PlayerResourceModule } from './player-resource/player-resource.module';
     InventoryModule,
     DungeonModule,
     PlayerResourceModule,
+    PlayersModule,
+    GemModule,
   ],
   controllers: [FallbackController],
 })
