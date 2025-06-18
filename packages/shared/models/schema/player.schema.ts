@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, SchemaTypes } from 'mongoose';
 
 export type PlayersDocument = Players & Document;
 @Schema()
@@ -11,6 +11,15 @@ export class Players extends Document {
 
   @Prop()
   username: string;
+
+  @Prop({ type: SchemaTypes.UUID })
+  nonce: string;
+
+  @Prop({ type: SchemaTypes.Boolean, default: false })
+  isClaimInitialGem?: boolean;
+
+  @Prop()
+  initlaGemNonce: number;
 }
 
 export const PlayerSchema = SchemaFactory.createForClass(Players);
