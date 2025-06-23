@@ -10,6 +10,10 @@ import {
 } from '@app/shared/models/schema/player-progress.schema';
 import { PlayersService } from '../players/players.service';
 import { Web3Service } from '@app/web3';
+import {
+  DropGem,
+  DropGemSchema,
+} from '@app/shared/models/schema/drop-gem.schema';
 
 @Module({
   imports: [
@@ -17,6 +21,7 @@ import { Web3Service } from '@app/web3';
       { name: Seasons.name, schema: SeasonSchema },
       { name: Players.name, schema: PlayerSchema },
       { name: PlayerProgress.name, schema: PlayerProgressSchema },
+      { name: DropGem.name, schema: DropGemSchema },
     ]),
   ],
   providers: [DungeonService, PlayersService, Web3Service],
