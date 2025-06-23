@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { walletAddressDto } from './dto/WalletAddress.dto';
 import { Model, Types } from 'mongoose';
@@ -15,6 +15,15 @@ import {
   DropGem,
   DropGemDocument,
 } from '@app/shared/models/schema/drop-gem.schema';
+import {
+  DistributeBossReward,
+  DistributeBossRewardDocument,
+} from '@app/shared/models/schema/distribute-boss-reward.schema';
+import { Redis } from 'ioredis';
+import {
+  BossReward,
+  BossRewardDocument,
+} from '@app/shared/models/schema/boss-reward.schema';
 
 @Injectable()
 export class DungeonService {
@@ -27,7 +36,12 @@ export class DungeonService {
     private readonly playerProgressModel: Model<PlayerProgress>,
     @InjectModel(DropGem.name)
     private readonly dropGemModel: Model<DropGemDocument>,
+    @InjectModel(DistributeBossReward.name)
+    private readonly distributeBossRewardModel: Model<DistributeBossRewardDocument>,
+    @InjectModel(BossReward.name)
+    private readonly bossRewardModel: Model<BossRewardDocument>,
     private readonly playerService: PlayersService,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
   async getCurrentSeason() {
@@ -506,9 +520,13 @@ export class DungeonService {
       { sort: { wave: -1, startTime: -1 } },
     );
 
-    if (!playerProgress || playerProgress.isCompleted) {
+    if (
+      !playerProgress ||
+      playerProgress.endTime > 0 ||
+      playerProgress.isCompleted
+    ) {
       throw new HttpException(
-        'Player progress not found',
+        'Player progress not found or ended',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -527,5 +545,141 @@ export class DungeonService {
     );
 
     return { totalGems: dropGemDocument.gems, dropAmount: 15 };
+  }
+
+  async finishBoss(
+    query: GameIdDto,
+    player: string,
+  ): Promise<{ totalGems: number; dropAmount: number }> {
+    const playerDocument = await this.playerService.getPlayerInfo(player);
+    const { gameId } = query;
+
+    const playerProgress = await this.playerProgressModel.findOne(
+      {
+        gameId,
+        player: playerDocument._id,
+      },
+      {},
+      { sort: { wave: -1, startTime: -1 } },
+    );
+
+    if (
+      !playerProgress ||
+      playerProgress.endTime > 0 ||
+      playerProgress.isCompleted
+    ) {
+      throw new HttpException(
+        'Player progress not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const exists = await this.bossRewardModel.findOne({
+      player: playerDocument._id,
+      wave: playerProgress.wave,
+    });
+    if (exists) {
+      const dropGemDocument = await this.dropGemModel.findOne({
+        player: playerDocument._id,
+        gameId,
+      });
+
+      return {
+        totalGems: dropGemDocument ? dropGemDocument.gems : 0,
+        dropAmount: 0,
+      };
+    }
+
+    const distributeRewardDoc = await this.distributeBossRewardModel.findOne(
+      {
+        wave: playerProgress.wave,
+      },
+      {},
+      { sort: { wave: -1, startTime: -1 } },
+    );
+
+    if (!distributeRewardDoc) {
+      throw new HttpException(
+        'Distribute reward not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const redisKey = `boss_wave_${playerProgress.wave}`;
+    const score = Date.now();
+
+    if (distributeRewardDoc.remainingGems > 0) {
+      // 2. Push to Redis with timestamp
+      await this.redis.zadd(redisKey, score, player);
+    }
+
+    let dropAmount = 0;
+    const rank = await this.redis.zrank(redisKey, player);
+
+    if (rank >= 0 && rank < distributeRewardDoc.maxWinner) {
+      dropAmount = this.calculateGemReward(
+        rank,
+        distributeRewardDoc.maxWinner,
+        distributeRewardDoc.totalGems,
+        distributeRewardDoc.decayRate,
+      );
+
+      await this.bossRewardModel.create({
+        player: playerDocument._id,
+        wave: playerProgress.wave,
+        rank: rank + 1,
+        gems: dropAmount,
+        rewardedAt: score,
+      });
+
+      distributeRewardDoc.remainingGems -= dropAmount;
+      await distributeRewardDoc.save();
+    }
+
+    const dropGemDocument = await this.dropGemModel.findOneAndUpdate(
+      {
+        player: playerDocument._id,
+        gameId,
+      },
+      {
+        $inc: {
+          gems: dropAmount,
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    return { totalGems: dropGemDocument.gems, dropAmount };
+  }
+
+  private calculateGemReward(
+    rank: number,
+    maxWinners: number,
+    totalGems: number,
+    decayRate: number,
+  ): number {
+    const weights = [];
+
+    // Step 1: Calculate weights using exponential decay
+    for (let i = 0; i < maxWinners; i++) {
+      const weight = Math.exp(-decayRate * i);
+      weights.push(weight);
+    }
+
+    // Step 2: Normalize weights so their sum equals totalGems
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+    const normalizedRewards = weights.map((w) =>
+      Math.floor((w / weightSum) * totalGems),
+    );
+
+    // Step 3: Adjust for rounding error (if any gold remains due to flooring)
+    const distributed = normalizedRewards.reduce((sum, g) => sum + g, 0);
+    let remainder = totalGems - distributed;
+
+    for (let i = 0; remainder > 0 && i < maxWinners; i++, remainder--) {
+      normalizedRewards[i] += 1;
+    }
+
+    return normalizedRewards[rank];
   }
 }
