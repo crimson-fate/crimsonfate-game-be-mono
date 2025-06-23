@@ -10,6 +10,11 @@ import { GetCurrentRankDto, SeasonIdDto } from './dto/SeasonId.dto';
 import { v1 as uuidv1 } from 'uuid';
 import { PlayersService } from '../players/players.service';
 import { PlayerProgressDto } from './dto/PlayerProgress.dto';
+import { GameIdDto } from './dto/gameId.dto';
+import {
+  DropGem,
+  DropGemDocument,
+} from '@app/shared/models/schema/drop-gem.schema';
 
 @Injectable()
 export class DungeonService {
@@ -20,6 +25,8 @@ export class DungeonService {
     private readonly PlayersModel: Model<Players>,
     @InjectModel(PlayerProgress.name)
     private readonly playerProgressModel: Model<PlayerProgress>,
+    @InjectModel(DropGem.name)
+    private readonly dropGemModel: Model<DropGemDocument>,
     private readonly playerService: PlayersService,
   ) {}
 
@@ -84,6 +91,19 @@ export class DungeonService {
       endTime: progress.endTime,
       isCompleted: progress.isCompleted,
     };
+
+    await this.dropGemModel.updateMany(
+      {
+        player: player._id,
+        isClaimed: false,
+        isCancelled: false,
+      },
+      {
+        $set: {
+          isCancelled: true,
+        },
+      },
+    );
     return result;
   }
 
@@ -468,5 +488,44 @@ export class DungeonService {
     }
 
     return leaderboard[0];
+  }
+
+  async dropGem(
+    query: GameIdDto,
+    player: string,
+  ): Promise<{ totalGems: number; dropAmount: number }> {
+    const playerDocument = await this.playerService.getPlayerInfo(player);
+
+    const { gameId } = query;
+    const playerProgress = await this.playerProgressModel.findOne(
+      {
+        gameId,
+        player: playerDocument._id,
+      },
+      {},
+      { sort: { wave: -1, startTime: -1 } },
+    );
+
+    if (!playerProgress || playerProgress.isCompleted) {
+      throw new HttpException(
+        'Player progress not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const dropGemDocument = await this.dropGemModel.findOneAndUpdate(
+      {
+        player: playerDocument._id,
+        gameId,
+      },
+      {
+        $inc: {
+          gems: 15,
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    return { totalGems: dropGemDocument.gems, dropAmount: 15 };
   }
 }
