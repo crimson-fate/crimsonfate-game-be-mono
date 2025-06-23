@@ -5,6 +5,8 @@ import { walletAddressDto } from './dto/WalletAddress.dto';
 import { CompleteWaveDto } from './dto/CompleteWave.dto';
 import { GetCurrentRankDto, SeasonIdDto } from './dto/SeasonId.dto';
 import { BaseResult } from '@app/shared/utils/types';
+import { iInfoToken, JWT, User } from '@app/shared/jwt';
+import { GameIdDto } from './dto/gameId.dto';
 
 @Controller('dungeon')
 @ApiTags('Dungeon')
@@ -91,5 +93,14 @@ export class DungeonController {
   })
   async getCurrentRankByWalletAddress(@Query() query: GetCurrentRankDto) {
     return this.dungeonService.getCurrentRankByWalletAddress(query);
+  }
+
+  @JWT()
+  @Post('drop-gem')
+  @ApiOperation({ summary: 'Drop gem during play dungeon' })
+  @ApiResponse({ status: 200, description: 'Gem dropped successfully' })
+  async dropGem(@Body() body: GameIdDto, @User() user: iInfoToken) {
+    const result = await this.dungeonService.dropGem(body, user.address);
+    return new BaseResult(result);
   }
 }
