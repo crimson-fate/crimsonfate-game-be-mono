@@ -1,5 +1,4 @@
 # Game Backend Monorepo
-
 A comprehensive backend system for a blockchain-based game, built with NestJS and organized as a monorepo using Yarn workspaces.
 
 ## 🎮 Project Overview
@@ -84,7 +83,7 @@ yarn install
 Create a `.env` file in the root directory:
 
 ```bash
-# Database Configuration
+# Database Configuration example
 MONGODB_URI=mongodb://localhost:27018/game_db
 
 # JWT Configuration
