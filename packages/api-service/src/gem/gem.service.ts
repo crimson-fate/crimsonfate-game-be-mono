@@ -2,28 +2,40 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PlayersService } from '../players/players.service';
 import { shortString, stark, typedData, TypedData, uint256 } from 'starknet';
 import { Web3Service } from '@app/web3';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import {
+  DropGem,
+  DropGemDocument,
+} from '@app/shared/models/schema/drop-gem.schema';
+import { GameIdDto } from '../dungeon/dto/gameId.dto';
 
 @Injectable()
 export class GemService {
   constructor(
+    @InjectModel(DropGem.name)
+    private readonly dropGemModel: Model<DropGemDocument>,
     private readonly playerService: PlayersService,
     private readonly web3Service: Web3Service,
   ) {}
 
-  async claimInitialGem(address: string): Promise<string[]> {
+  async claimInitialGem(
+    address: string,
+  ): Promise<{ saltNonce: number; keys: string[] }> {
     const player = await this.playerService.getPlayerInfo(address);
     if (player.isClaimInitialGem) {
       throw new HttpException('Player already claimed', HttpStatus.BAD_REQUEST);
     }
 
-    player.isClaimInitialGem = true;
-    await player.save();
     const message = this.getClaimGemMessage(address, player.initlaGemNonce);
     const valAccount = this.web3Service.getValidatorAccount();
     const signature = await valAccount.signMessage(message);
     const formattedKeys = stark.formatSignature(signature);
 
-    return formattedKeys;
+    player.isClaimInitialGem = true;
+    await player.save();
+
+    return { saltNonce: player.initlaGemNonce, keys: formattedKeys };
   }
 
   getClaimGemMessage(address: string, nonce: number): TypedData {
@@ -82,5 +94,39 @@ export class GemService {
     };
 
     return message;
+  }
+
+  async claimDungeonGem(
+    query: GameIdDto,
+    address: string,
+  ): Promise<{ saltNonce: number; keys: string[] }> {
+    const player = await this.playerService.getPlayerInfo(address);
+    const { gameId } = query;
+    const dropGemDocument = await this.dropGemModel.findOne({
+      player: player._id,
+      gameId,
+    });
+
+    if (
+      !dropGemDocument ||
+      dropGemDocument.isClaimed ||
+      dropGemDocument.isCancelled
+    ) {
+      throw new HttpException(
+        'Can not claim gem for this game',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const saltNonce = Math.floor(Date.now() / 1000);
+    const message = this.getClaimGemMessage(address, saltNonce);
+    const valAccount = this.web3Service.getValidatorAccount();
+    const signature = await valAccount.signMessage(message);
+    const formattedKeys = stark.formatSignature(signature);
+
+    dropGemDocument.isClaimed = true;
+    await dropGemDocument.save();
+
+    return { saltNonce, keys: formattedKeys };
   }
 }
