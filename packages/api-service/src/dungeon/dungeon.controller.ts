@@ -103,4 +103,13 @@ export class DungeonController {
     const result = await this.dungeonService.dropGem(body, user.address);
     return new BaseResult(result);
   }
+
+  @JWT()
+  @Post('finish-boss')
+  @ApiOperation({ summary: 'Get reward for killing boss' })
+  @ApiResponse({ status: 200, description: 'Reward fetched successfully' })
+  async finishBoss(@Body() body: GameIdDto, @User() user: iInfoToken) {
+    const result = await this.dungeonService.finishBoss(body, user.address);
+    return new BaseResult(result);
+  }
 }
