@@ -19,6 +19,7 @@ import { PlayerResourceModule } from './player-resource/player-resource.module';
 import { PlayersModule } from './players/players.module';
 import { JwtModule } from '@nestjs/jwt';
 import { GemModule } from './gem/gem.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -34,6 +35,14 @@ import { GemModule } from './gem/gem.module';
     ServeStaticModule.forRoot({
       rootPath: resolve(__dirname, 'public'), // 😬 fragile
       serveRoot: '/',
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 1000,
+          limit: 10,
+        },
+      ],
     }),
     HeroesModule,
     EquipmentModule,

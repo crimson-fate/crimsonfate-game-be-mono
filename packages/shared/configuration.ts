@@ -21,8 +21,4 @@ export default () => ({
     PRIVATE_KEY: String(process.env.VALIDATOR_PRIVATE_KEY),
     ADDRESS: String(process.env.VALIDATOR_ADDRESS),
   },
-  VALIDATOR: {
-    PRIVATE_KEY: String(process.env.VALIDATOR_PRIVATE_KEY),
-    ADDRESS: String(process.env.VALIDATOR_ADDRESS),
-  },
 });
