@@ -574,6 +574,7 @@ export class AiDealerAgentService {
         startTime: 0,
         duration: 0,
         isFarming: false,
+        stakedGem: 0,
       });
       return this.agentPlayerDataModel.findOne({ walletAddress }).exec();
     }
