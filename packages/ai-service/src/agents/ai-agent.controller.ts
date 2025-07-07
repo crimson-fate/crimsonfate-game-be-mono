@@ -202,6 +202,7 @@ export class AiAgentController {
         startTime: data.startTime,
         duration: data.duration,
         itemCounts: itemCounts,
+        stakedGem: 0, // Reset stakedGem when starting negotiation
       });
       const playerMoney = await this.playerResourceModel.findOne({
         walletAddress: body.walletAddress,
@@ -266,6 +267,7 @@ export class AiAgentController {
             startTime: 0,
             duration: 0,
             itemCounts: null,
+            stakedGem: 0,
           },
         );
         await this.aiDealerAgentService.reset(body.walletAddress);
@@ -278,6 +280,7 @@ export class AiAgentController {
             startTime: 0,
             duration: 0,
             itemCounts: null,
+            stakedGem: 0,
           },
         );
         await this.aiDealerAgentService.reset(body.walletAddress);
@@ -319,6 +322,7 @@ export class AiAgentController {
         startTime: 0,
         duration: 0,
         itemCounts: null,
+        stakedGem: 0,
       });
       this.aiDealerAgentService.reset(body.walletAddress);
       return { message: 'Negotiation ended successfully' };
@@ -364,6 +368,7 @@ export class AiAgentController {
       if (!data) {
         const data = await this.aiDealerAgentService.createAgentFarmData({
           walletAddress: walletAddress,
+          stakedGem: 0,
         });
         return data;
       }

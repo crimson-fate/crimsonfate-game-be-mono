@@ -36,6 +36,11 @@ export class CreateAgentFarmDto {
     rare: number;
     epic: number;
   };
+
+  @ApiProperty({ description: 'Amount of gems staked by the player' })
+  @IsNumber()
+  @IsOptional()
+  stakedGem?: number;
 }
 
 export class UpdateAgentFarmDto {
@@ -63,6 +68,11 @@ export class UpdateAgentFarmDto {
     rare: number;
     epic: number;
   };
+
+  @ApiProperty({ description: 'Amount of gems staked by the player' })
+  @IsNumber()
+  @IsOptional()
+  stakedGem?: number;
 }
 
 export class BoostAgentDto {
