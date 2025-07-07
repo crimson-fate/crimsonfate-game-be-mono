@@ -84,6 +84,8 @@ import { JwtService } from '@nestjs/jwt';
         const client = new Redis({
           host: configuration().REDIS.HOST,
           port: configuration().REDIS.PORT,
+          username: configuration().REDIS.USERNAME,
+          password: configuration().REDIS.PASSWORD,
         });
         // await client.connect();
         return client;

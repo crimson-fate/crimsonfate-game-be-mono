@@ -15,6 +15,8 @@ export default () => ({
   REDIS: {
     HOST: String(process.env.REDIS_HOST),
     PORT: Number(process.env.REDIS_PORT),
+    USERNAME: String(process.env.REDIS_USERNAME),
+    PASSWORD: String(process.env.REDIS_PASSWORD),
     URL: String(process.env.REDIS_URL),
   },
   VALIDATOR: {
