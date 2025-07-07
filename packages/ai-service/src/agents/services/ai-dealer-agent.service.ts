@@ -22,7 +22,7 @@ import { AgentPlayerData } from '@app/shared/models/schema/agent-player-data.sch
 import { CreateAgentFarmDto, UpdateAgentFarmDto } from '../dto/agent-farm.dto';
 
 import { EventEmitter } from 'events'; // Using EventEmitter for simulating input
-import { parseAgentResponse } from './utils/response-parser';
+import { parseAgentResponse } from '../utils/response-parser';
 
 // Initialize the UI
 simpleUI.initializeUI();
@@ -279,8 +279,7 @@ export class AiDealerAgentService {
       extensions: [
         extension({
           name: 'hagni',
-          actions: [
-          ],
+          actions: [],
           // --- Output Definition ---
           outputs: {
             hagniResponseOutput: output({
@@ -415,7 +414,7 @@ export class AiDealerAgentService {
         vector: createVectorStore(),
       },
     });
-    
+
     this.agent.start();
 
     simpleUI.logMessage(LogLevel.INFO, 'Hagni agent background loop started.');
@@ -539,7 +538,7 @@ export class AiDealerAgentService {
             playerMessage: message,
             playerCurrentBalance: playerMoney, // Pass player's money
           },
-        }
+        },
       });
       response = parseAgentResponse(response);
       simpleUI.logMessage(
@@ -566,9 +565,16 @@ export class AiDealerAgentService {
   public async getAgentFarmData(
     walletAddress: string,
   ): Promise<AgentPlayerData> {
-    const result = await this.agentPlayerDataModel.findOne({ walletAddress }).exec();
+    const result = await this.agentPlayerDataModel
+      .findOne({ walletAddress })
+      .exec();
     if (!result) {
-      await this.createAgentFarmData({ walletAddress, startTime: 0, duration: 0, isFarming: false });
+      await this.createAgentFarmData({
+        walletAddress,
+        startTime: 0,
+        duration: 0,
+        isFarming: false,
+      });
       return this.agentPlayerDataModel.findOne({ walletAddress }).exec();
     }
     return result;
