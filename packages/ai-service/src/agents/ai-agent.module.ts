@@ -29,6 +29,22 @@ import { DungeonService } from 'api-service/src/dungeon/dungeon.service';
 import { Seasons, SeasonSchema } from '@app/shared/models/schema/season.schema';
 import { Players, PlayerSchema } from '@app/shared/models/schema/player.schema';
 import { PlayersService } from 'api-service/src/players/players.service';
+import {
+  DropGem,
+  DropGemSchema,
+} from '@app/shared/models/schema/drop-gem.schema';
+import {
+  DistributeBossReward,
+  DistributeBossRewardSchema,
+} from '@app/shared/models/schema/distribute-boss-reward.schema';
+import {
+  BossReward,
+  BossRewardSchema,
+} from '@app/shared/models/schema/boss-reward.schema';
+import Redis from 'ioredis';
+import configuration from '@app/shared/configuration';
+import { Web3Service } from '@app/web3';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -40,6 +56,9 @@ import { PlayersService } from 'api-service/src/players/players.service';
       { name: PlayerProgress.name, schema: PlayerProgressSchema },
       { name: Seasons.name, schema: SeasonSchema },
       { name: Players.name, schema: PlayerSchema },
+      { name: DropGem.name, schema: DropGemSchema },
+      { name: DistributeBossReward.name, schema: DistributeBossRewardSchema },
+      { name: BossReward.name, schema: BossRewardSchema },
     ]),
   ],
   controllers: [AiAgentController],
@@ -50,6 +69,26 @@ import { PlayersService } from 'api-service/src/players/players.service';
     FeedbackService,
     DungeonService,
     PlayersService,
+    Web3Service,
+    JwtService,
+    {
+      provide: 'REDIS_OPTIONS',
+      useValue: {
+        url: configuration().REDIS.URL,
+      },
+    },
+    {
+      inject: ['REDIS_OPTIONS'],
+      provide: 'REDIS_CLIENT',
+      useFactory: async (options: { url: string }) => {
+        const client = new Redis({
+          host: configuration().REDIS.HOST,
+          port: configuration().REDIS.PORT,
+        });
+        // await client.connect();
+        return client;
+      },
+    },
   ],
   exports: [AiAgentService, AiDealerAgentService, FeedbackService],
 })
