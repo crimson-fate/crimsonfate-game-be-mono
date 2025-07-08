@@ -83,7 +83,7 @@ export class PlayersService {
         name: 'CrimsonFate',
         version: '1',
         revision: '1',
-        chainId: 'SN_SEPOLIA',
+        chainId: 'SN_MAIN',
       },
       message: {
         nonce: player.nonce,

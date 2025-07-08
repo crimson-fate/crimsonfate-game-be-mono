@@ -40,6 +40,6 @@ export class GemController {
     BaseResult<{ amount: number; saltNonce: number; keys: string[] }>
   > {
     const result = await this.gemService.claimDungeonGem(query, user.address);
-    return new BaseResult({ amount: 15, ...result });
+    return new BaseResult(result);
   }
 }
