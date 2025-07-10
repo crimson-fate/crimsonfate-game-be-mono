@@ -7,6 +7,7 @@ import { configureSwagger } from '@app/shared/config/configSwagger';
 import { configureValidation } from '@app/shared/config/configValidation';
 import { json, urlencoded } from 'express';
 import configuration from '@app/shared/configuration';
+import { configureCors, whitelistPage } from '@app/shared/config/configCors';
 // import * as bodyParser from 'body-parser';
 
 mongoose.set('debug', true);
@@ -15,26 +16,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = configuration().PORT.AI;
 
-  const whitelist = [
-    'https://crimsonfate.starkarcade.com',
-    'https://be-crimsonfate.starkarcade.com',
-    'https://ai-crimsonfate.crimsonfate.xyz',
-    'http://localhost:8001',
-    'http://localhost:8000',
-  ];
-  app.enableCors({
-    origin: function (origin, callback) {
-      if (!origin || whitelist.indexOf(origin) !== -1) {
-        console.log('AI Allowed cors for:', origin ? origin : 'Localhost');
-        callback(null, true);
-      } else {
-        console.log('blocked cors for:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
+  // const whitelist = configuration().CORS.WHITELIST;
+  app.enableCors(configureCors(whitelistPage));
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
   configureSwagger(app);

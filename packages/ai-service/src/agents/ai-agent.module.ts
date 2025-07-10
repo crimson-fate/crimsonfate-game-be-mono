@@ -45,6 +45,7 @@ import Redis from 'ioredis';
 import configuration from '@app/shared/configuration';
 import { Web3Service } from '@app/web3';
 import { JwtService } from '@nestjs/jwt';
+import { Seasons, SeasonSchema } from '@app/shared/models/schema/season.schema';
 
 @Module({
   imports: [
@@ -54,7 +55,7 @@ import { JwtService } from '@nestjs/jwt';
       { name: UserFeedbackData.name, schema: UserFeedbackDataSchema },
       { name: PlayerResource.name, schema: PlayerResourceSchema },
       { name: PlayerProgress.name, schema: PlayerProgressSchema },
-
+      { name: Seasons.name, schema: SeasonSchema },
       { name: Players.name, schema: PlayerSchema },
       { name: DropGem.name, schema: DropGemSchema },
       { name: DistributeBossReward.name, schema: DistributeBossRewardSchema },
