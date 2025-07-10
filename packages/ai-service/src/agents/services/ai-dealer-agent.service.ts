@@ -458,7 +458,7 @@ export class AiDealerAgentService {
         console.log(
           `Unique ID: ${negotiationId}, Item Data: ${JSON.stringify(itemData)}, Config: ${JSON.stringify(config)}`,
         );
-        var response = await this.agent.run({
+        let response = await this.agent.run({
           context: this.goalContext,
           args: {
             // Use the context type defined in the extension
@@ -523,7 +523,7 @@ export class AiDealerAgentService {
         `Service: Received player message for ${negotiationId}: "${message}"`,
       );
 
-      var response = await this.agent.send({
+      let response = await this.agent.send({
         context: this.goalContext,
         args: {
           type: 'hagniNegotiation',

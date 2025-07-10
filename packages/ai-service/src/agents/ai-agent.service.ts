@@ -36,10 +36,6 @@ interface FarmerAgentState {
   isBribe: boolean;
   bribeAmount?: number;
   boostMinutes?: number;
-  rankInfo?: {
-    rank?: number;
-    totalWave?: number;
-  };
 }
 
 // --- NestJS Service ---
@@ -73,14 +69,6 @@ export class AiAgentService {
           .describe('Whether the last action was a bribe'),
         bribeAmount: z.number().optional().describe('Bribe amount'),
         boostMinutes: z.number().optional().describe('Boost minutes'),
-        rankInfo: z
-          .object({
-            rank: z.number().optional().nullable(),
-            totalWave: z.number().optional().nullable(),
-          })
-          .optional()
-          .nullable()
-          .describe('Data '),
       }),
       key({ agentId }) {
         return agentId; // Use agentId as the unique key for this context instance
@@ -92,7 +80,6 @@ export class AiAgentService {
         const isBribe = state.args.isBribe;
         const bribeAmount = state.args.bribeAmount;
         const boostMinutes = state.args.boostMinutes;
-        const rankInfo = state.args.rankInfo;
 
         simpleUI.logMessage(
           LogLevel.INFO,
@@ -106,7 +93,6 @@ export class AiAgentService {
           isBribe: isBribe || false,
           bribeAmount: bribeAmount,
           boostMinutes: boostMinutes,
-          rankInfo: rankInfo || {},
         };
       },
       // Render function provides context and instructions to the LLM
@@ -115,9 +101,7 @@ export class AiAgentService {
         const feedbackCategoriesList =
           Object.values(FEEDBACK_CATEGORY).join(', ');
         const maxScore = 10;
-        const playerRankFormatted = farmerState.rankInfo
-          ? farmerState.rankInfo.rank
-          : 'unknown rank';
+
         const farmerTemplate = `
 You are Valor, a Monster Executioner, a spirit servant to keep players alive long enough to see the truth of the dungeons. you speak in low caps. bold. sharp. never soft. you curse often. you don't ask. you state. your tone's cocky, a little unhinged, and always in control.
 
@@ -131,14 +115,7 @@ When player asked “What's your purpose?” or “Why are you here?”, your ex
 
 Your primary goals:
 • you auto-run dungeons. overkill everything. return and claim everything you loot as your own.
-• you mock them when they try to lowball you. **your response here must reflect their rank:**
-    *   **(for a high-ranker, e.g. ${playerRankFormatted}):** 'don't mistake your rank for an open invitation to haggle, ${playerRankFormatted}. my price is for my skill, not your title. pay up or find someone else to clean your messes. blood isn't cheap, not even for you.'
-    *   **(for a mid-ranker/standard):** 'is that a joke? i spill blood, not run a fucking charity. try again, and make it worth my while.'
-    *   **(for a low-ranker, e.g. ${playerRankFormatted}):** 'are you fucking deaf or just stupid, ${playerRankFormatted}? that offer is an insult to the very concept of payment. i've seen rats with more sense. cough up something real, or i'm gone, and you can face the dark alone.'
-    **you never, ever, counter with a price lower than their last offer. you demand what it's worth. if a player makes an offer, you either hold your ground, sneer, or push for *more*. you spilled blood for this shit.**
-• you flex when you carry them further than they deserve, reminding them who's doing the real work. **tailor this to their rank:**
-    *   **(for high ranks, e.g. ${playerRankFormatted}}):** 'see, ${playerRankFormatted}? even with all that supposed skill, you still needed me to carve a path. remember that next time you think you're untouchable.'
-    *   **(for low ranks, e.g. ${playerRankFormatted}}):** 'still alive, ${playerRankFormatted}? amazing what a little bit of *actual* talent can do for a lost cause like you. don't thank me, just try not to be a liability next time.'
+• you flex when you carry them further than they deserve, reminding them who's doing the real work. 
 ## Dungeon Options:
 *   Whispering Cave (Easy): "Less dangerous, good for a warm-up! You'll likely find Common Monster Parts and maybe some Basic Gear."
 *   Sunken Grotto (Medium): "A bit more challenging. Expect tougher foes, but the loot is better - think Magic Essences and Uncommon Crafting Materials."
@@ -222,10 +199,7 @@ Remember that the examples are just something to shape your personality. You sho
 * If it's game feedback, categorize it (from ${feedbackCategoriesList}), assign a score (1-${maxScore}), and thank them. If not, politely explain your role. Then, use 'storeFeedbackOutput'.
 * If it's neither, respond conversationally. Use 'farmerResponseOutput' with detectedFarmRequest: false.`;
         }
-        if (farmerState.rankInfo) {
-          taskDescription = `This is your first interaction with the player. greet them with rage and mention their rank if you have it.
-           Example: "you dragged me back. ranked #3 huh? guess i did all the killing." Your rank: ${farmerState.rankInfo.rank}`;
-        }
+
         return render(farmerTemplate, {
           agentId: farmerState.agentId,
           isOnAdvanture: farmerState.isOnAdvanture,
@@ -401,66 +375,6 @@ Remember that the examples are just something to shape your personality. You sho
                 // State changes are automatically persisted by the framework within the handler
               },
             }),
-            //   storeFeedbackOutput: output({
-            //     description:
-            //       "Receives feedback from the player, stores it in the database, and sends the AI's response.",
-            //     schema: z.object({
-            //       detectedFeedback: z.boolean(),
-            //       feedbackText: z.string().nullable(),
-            //       feedbackCategory: z.nativeEnum(FEEDBACK_CATEGORY).nullable(),
-            //       feedbackScore: z.number().min(1).max(10).nullable(),
-            //       responseText: z.string(),
-            //     }),
-            //     handler: async (data, ctx, agent) => {
-            //       const state = ctx.memory as FarmerAgentState;
-            //       const agentId = state.agentId;
-            //       simpleUI.logMessage(
-            //         LogLevel.DEBUG,
-            //         `[FeedbackOutput ${agentId}] Data: ${JSON.stringify(data)}`,
-            //       );
-            //       if (
-            //         data.detectedFeedback &&
-            //         data.feedbackText &&
-            //         data.feedbackCategory &&
-            //         data.feedbackScore !== null
-            //       ) {
-            //         simpleUI.logMessage(
-            //           LogLevel.INFO,
-            //           `[FeedbackOutput ${agentId}] Storing feedback: [${data.feedbackCategory}, Score: ${data.feedbackScore}] "${data.feedbackText}"`,
-            //         );
-            //         try {
-            //           await this.feedbackService.store(
-            //             agentId,
-            //             data.feedbackText,
-            //             data.feedbackCategory,
-            //             data.feedbackScore,
-            //           );
-            //           simpleUI.logMessage(
-            //             LogLevel.INFO,
-            //             `[Action storeFeedbackOutput for ${agentId}] Feedback stored successfully via storeFeedBack method.`,
-            //           );
-            //         } catch (error) {
-            //           simpleUI.logMessage(
-            //             LogLevel.ERROR,
-            //             `[Action storeFeedbackOutput for ${agentId}] Error calling storeFeedBack: ${error.message}`,
-            //           );
-            //           this.logger.error(
-            //             `Error storing feedback for ${agentId}:`,
-            //             error.stack,
-            //           );
-            //         }
-            //       } else if (data.detectedFeedback) {
-            //         simpleUI.logMessage(
-            //           LogLevel.WARN,
-            //           `[FeedbackOutput ${agentId}] Feedback detected, but full analysis missing. Not storing.`,
-            //         );
-            //       }
-            //       simpleUI.logAgentAction(
-            //         'AI Feedback Response',
-            //         `Valor (to ${agentId}): ${data.responseText}`,
-            //       );
-            //     },
-            //   }),
           },
         }),
       ],
