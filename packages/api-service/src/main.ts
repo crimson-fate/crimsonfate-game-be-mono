@@ -9,6 +9,7 @@ import { configureValidation } from '@app/shared/config/configValidation';
 
 import configuration from '@app/shared/configuration';
 import { json, urlencoded } from 'express';
+import { configureCors, whitelistPage } from '@app/shared/config/configCors';
 
 mongoose.set('debug', true);
 
@@ -16,27 +17,7 @@ async function bootstrap() {
   // const app = await NestFactory.create(AppModule);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const port = configuration().PORT.API;
-  const whitelist = [
-    'https://crimsonfate.starkarcade.com',
-    'https://be-crimsonfate.starkarcade.com',
-    'https://ai-crimsonfate.crimsonfate.xyz',
-    'http://localhost:8001',
-    'http://localhost:8000',
-  ];
-
-  app.enableCors({
-    origin: function (origin, callback) {
-      if (!origin || whitelist.indexOf(origin) !== -1) {
-        console.log('AI Allowed cors for:', origin ? origin : 'Localhost');
-        callback(null, true);
-      } else {
-        console.log('blocked cors for:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
+  app.enableCors(configureCors(whitelistPage));
   configureSwagger(app);
   configureValidation(app);
   app.useGlobalPipes(new ValidationPipe());
