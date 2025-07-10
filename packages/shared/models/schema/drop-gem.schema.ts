@@ -17,7 +17,7 @@ export class DropGem extends BaseSchema {
   gems: number;
 
   @Prop({ default: Math.floor(Date.now() / 1000) })
-  saltNonce?: string;
+  saltNonce?: number;
 
   @Prop({ type: Boolean, default: false })
   isClaimed?: boolean;
