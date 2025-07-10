@@ -27,7 +27,7 @@ export class GemService {
       throw new HttpException('Player already claimed', HttpStatus.BAD_REQUEST);
     }
 
-    const message = this.getClaimGemMessage(address, player.initlaGemNonce);
+    const message = this.getClaimGemMessage(address, 50, player.initlaGemNonce);
     const valAccount = this.web3Service.getValidatorAccount();
     const signature = await valAccount.signMessage(message);
     const formattedKeys = stark.formatSignature(signature);
@@ -38,7 +38,11 @@ export class GemService {
     return { saltNonce: player.initlaGemNonce, keys: formattedKeys };
   }
 
-  getClaimGemMessage(address: string, nonce: number): TypedData {
+  getClaimGemMessage(
+    address: string,
+    amount: number,
+    nonce: number,
+  ): TypedData {
     const message: TypedData = {
       types: {
         StarkNetDomain: [
@@ -84,11 +88,11 @@ export class GemService {
       domain: {
         name: 'crimson-fate',
         version: '1',
-        chainId: shortString.encodeShortString('SN_SEPOLIA'),
+        chainId: shortString.encodeShortString('SN_MAIN'),
       },
       message: {
         player: address,
-        amount: uint256.bnToUint256(50 * 1e18),
+        amount: uint256.bnToUint256(amount * 1e18),
         salt_nonce: nonce,
       },
     };
@@ -99,7 +103,7 @@ export class GemService {
   async claimDungeonGem(
     query: GameIdDto,
     address: string,
-  ): Promise<{ saltNonce: number; keys: string[] }> {
+  ): Promise<{ amount: number; saltNonce: number; keys: string[] }> {
     const player = await this.playerService.getPlayerInfo(address);
     const { gameId } = query;
     const dropGemDocument = await this.dropGemModel.findOne({
@@ -118,8 +122,11 @@ export class GemService {
       );
     }
 
-    const saltNonce = Math.floor(Date.now() / 1000);
-    const message = this.getClaimGemMessage(address, saltNonce);
+    const message = this.getClaimGemMessage(
+      address,
+      dropGemDocument.gems,
+      dropGemDocument.saltNonce,
+    );
     const valAccount = this.web3Service.getValidatorAccount();
     const signature = await valAccount.signMessage(message);
     const formattedKeys = stark.formatSignature(signature);
@@ -127,6 +134,10 @@ export class GemService {
     dropGemDocument.isClaimed = true;
     await dropGemDocument.save();
 
-    return { saltNonce, keys: formattedKeys };
+    return {
+      amount: dropGemDocument.gems,
+      saltNonce: dropGemDocument.saltNonce,
+      keys: formattedKeys,
+    };
   }
 }
