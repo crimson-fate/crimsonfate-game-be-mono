@@ -24,6 +24,9 @@ export class AgentPlayerData {
     rare: number;
     epic: number;
   };
+
+  @Prop({ required: false, default: 0 })
+  stakedGem: number;
 }
 
 export const AgentPlayerDataSchema =
