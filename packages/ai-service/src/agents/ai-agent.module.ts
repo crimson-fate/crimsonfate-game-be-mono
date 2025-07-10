@@ -26,7 +26,7 @@ import {
   PlayerProgressSchema,
 } from '@app/shared/models/schema/player-progress.schema';
 import { DungeonService } from 'api-service/src/dungeon/dungeon.service';
-import { Seasons, SeasonSchema } from '@app/shared/models/schema/season.schema';
+
 import { Players, PlayerSchema } from '@app/shared/models/schema/player.schema';
 import { PlayersService } from 'api-service/src/players/players.service';
 import {
@@ -54,7 +54,7 @@ import { JwtService } from '@nestjs/jwt';
       { name: UserFeedbackData.name, schema: UserFeedbackDataSchema },
       { name: PlayerResource.name, schema: PlayerResourceSchema },
       { name: PlayerProgress.name, schema: PlayerProgressSchema },
-      { name: Seasons.name, schema: SeasonSchema },
+
       { name: Players.name, schema: PlayerSchema },
       { name: DropGem.name, schema: DropGemSchema },
       { name: DistributeBossReward.name, schema: DistributeBossRewardSchema },
