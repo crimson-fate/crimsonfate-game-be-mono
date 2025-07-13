@@ -61,6 +61,15 @@ export class PlayersService {
       });
 
       player = await newPlayer.save();
+    } else {
+      if (!player.nonce) {
+        player.nonce = uuidv1();
+        await player.save();
+      }
+      if (!player.initlaGemNonce) {
+        player.initlaGemNonce = Math.floor(Date.now() / 1000);
+        await player.save();
+      }
     }
 
     return player;
@@ -108,6 +117,8 @@ export class PlayersService {
   async verifySignature(query: VerifySignatureDto): Promise<string> {
     try {
       const { address, signature } = query;
+      console.log('Verifying signature for address:', address);
+      console.log('Signature:', signature);
       const provider = this.web3Service.getProvider();
 
       const message = await this.getAuthMessage(address);
@@ -119,6 +130,7 @@ export class PlayersService {
       const token = await this.generateToken(address);
       return token;
     } catch (error) {
+      console.log('Error verifying signature:', error);
       throw new HttpException('Invalid signature', HttpStatus.BAD_REQUEST);
     }
   }
