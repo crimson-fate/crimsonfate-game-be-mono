@@ -16,6 +16,12 @@ export class ChatDto {
   })
   @IsString()
   walletAddress?: string;
+
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: true,
+  })
+  progressId: number;
 }
 
 export class WalletDto {
@@ -26,6 +32,12 @@ export class WalletDto {
   })
   @IsString()
   walletAddress?: string;
+
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: true,
+  })
+  progressId: number;
 }
 
 // DTO for the response - can be text or operation
