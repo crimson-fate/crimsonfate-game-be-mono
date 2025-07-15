@@ -6,6 +6,9 @@ export type AgentPlayerDataDocument = AgentPlayerData & Document;
 @Schema()
 export class AgentPlayerData {
   @Prop({ required: true, unique: true })
+  progressId: number;
+
+  @Prop({ required: true, unique: true })
   walletAddress: string;
 
   @Prop({ required: true, default: false })
