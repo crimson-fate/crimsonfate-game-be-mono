@@ -7,10 +7,13 @@ export type AgentRewardDocument = AgentReward & Document;
 @Schema({ timestamps: true })
 export class AgentReward {
   @Prop({ type: SchemaTypes.ObjectId, ref: 'AgentPlayerData' })
-  agentId: AgentPlayerDataDocument;
+  agentProgressId: AgentPlayerDataDocument;
 
   @Prop()
   multiplier: number;
+
+  @Prop()
+  saltNonce: number;
 }
 
 export const AgentRewardSchema = SchemaFactory.createForClass(AgentReward);

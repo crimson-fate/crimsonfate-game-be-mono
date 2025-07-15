@@ -1,6 +1,6 @@
 import configuration from '@app/shared/configuration';
 import { Injectable, Logger } from '@nestjs/common';
-import { Account, Provider } from 'starknet';
+import { Account, Provider, stark, TypedData } from 'starknet';
 
 @Injectable()
 export class Web3Service {
@@ -20,5 +20,11 @@ export class Web3Service {
     );
 
     return account;
+  }
+
+  async validatorSignMessage(message: TypedData): Promise<string[]> {
+    const account = this.getValidatorAccount();
+    const signature = await account.signMessage(message);
+    return stark.formatSignature(signature);
   }
 }

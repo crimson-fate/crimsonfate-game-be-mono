@@ -20,6 +20,7 @@ import { PlayersModule } from './players/players.module';
 import { JwtModule } from '@nestjs/jwt';
 import { GemModule } from './gem/gem.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AgentModule } from './agent/agent.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PlayerResourceModule,
     PlayersModule,
     GemModule,
+    AgentModule,
   ],
   controllers: [FallbackController],
 })
