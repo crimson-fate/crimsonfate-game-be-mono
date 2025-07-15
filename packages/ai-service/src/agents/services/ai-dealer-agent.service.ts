@@ -564,6 +564,7 @@ export class AiDealerAgentService {
 
   public async getAgentFarmData(
     walletAddress: string,
+    progressId: number,
   ): Promise<AgentPlayerData> {
     const result = await this.agentPlayerDataModel
       .findOne({ walletAddress })
@@ -575,6 +576,7 @@ export class AiDealerAgentService {
         duration: 0,
         isFarming: false,
         stakedGem: 0,
+        progressId,
       });
       return this.agentPlayerDataModel.findOne({ walletAddress }).exec();
     }
@@ -594,7 +596,7 @@ export class AiDealerAgentService {
   ): Promise<AgentPlayerData> {
     return this.agentPlayerDataModel
       .findOneAndUpdate(
-        { walletAddress },
+        { walletAddress, progressId: updateAgentFarmDto.progressId },
         { $set: updateAgentFarmDto },
         { new: true },
       )

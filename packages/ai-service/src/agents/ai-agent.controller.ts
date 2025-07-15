@@ -13,15 +13,11 @@ import {
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { AiAgentService } from './ai-agent.service';
-import {
-  ChatDto,
-  FeedbackDto,
-  InitializeAgentDto,
-  WalletDto,
-} from './dto/chat.dto';
+import { ChatDto, WalletDto } from './dto/chat.dto';
 import {
   BoostAgentDto,
   CreateAgentFarmDto,
+  GetAgentFarmDto,
   UpdateAgentFarmDto,
 } from './dto/agent-farm.dto';
 import {
@@ -109,6 +105,7 @@ export class AiAgentController {
     try {
       const data = await this.aiDealerAgentService.getAgentFarmData(
         body.walletAddress,
+        body.progressId,
       );
       const result = await this.aiAgentService.initialize(
         body.walletAddress,
@@ -136,6 +133,7 @@ export class AiAgentController {
       console.log('Running negotiation example...');
       const data = await this.aiDealerAgentService.getAgentFarmData(
         body.walletAddress,
+        body.progressId,
       );
       const result = await this.aiAgentService.handleMessage(
         body.walletAddress,
@@ -152,26 +150,6 @@ export class AiAgentController {
     }
   }
 
-  // @Post('normal/end')
-  // @ApiOperation({ summary: 'End the chat' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Chat ended successfully',
-  // })
-  // async endChat(@Body() body: WalletDto): Promise<any> {
-  //   try {
-  //     console.log('Ending chat...');
-  //     const result = await this.aiAgentService.stopAgent();
-  //     return result;
-  //   } catch (error) {
-  //     console.error('Error ending chat:', error);
-  //     throw new HttpException(
-  //       'An error occurred while processing your request',
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   }
-  // }
-
   @Post('dealer/start')
   @ApiOperation({ summary: 'Start dealing with agent' })
   @ApiResponse({
@@ -183,6 +161,7 @@ export class AiAgentController {
       console.log('Running negotiation example...');
       const data = await this.aiDealerAgentService.getAgentFarmData(
         body.walletAddress,
+        body.progressId,
       );
       if (!data || !data.isFarming) {
         console.log("Can't find agent farm data or farming not started yet");
@@ -203,6 +182,7 @@ export class AiAgentController {
         duration: data.duration,
         itemCounts: itemCounts,
         stakedGem: 0, // Reset stakedGem when starting negotiation
+        progressId: data.progressId,
       });
       const playerMoney = await this.playerResourceModel.findOne({
         walletAddress: body.walletAddress,
@@ -256,6 +236,7 @@ export class AiAgentController {
       if (result.outcome && result.outcome === 'accepted') {
         const data = await this.aiDealerAgentService.getAgentFarmData(
           body.walletAddress,
+          body.progressId,
         );
         result.itemCounts = data.itemCounts;
         result.extractedOffer = result.extractedOffer;
@@ -268,6 +249,7 @@ export class AiAgentController {
             duration: 0,
             itemCounts: null,
             stakedGem: 0,
+            progressId: data.progressId,
           },
         );
         await this.aiDealerAgentService.reset(body.walletAddress);
@@ -281,6 +263,7 @@ export class AiAgentController {
             duration: 0,
             itemCounts: null,
             stakedGem: 0,
+            progressId: body.progressId,
           },
         );
         await this.aiDealerAgentService.reset(body.walletAddress);
@@ -307,6 +290,7 @@ export class AiAgentController {
       console.log('Ending negotiation...');
       const data = await this.aiDealerAgentService.getAgentFarmData(
         body.walletAddress,
+        body.progressId,
       );
       if (!data || !data.isFarming) {
         console.log(
@@ -323,6 +307,7 @@ export class AiAgentController {
         duration: 0,
         itemCounts: null,
         stakedGem: 0,
+        progressId: body.progressId,
       });
       this.aiDealerAgentService.reset(body.walletAddress);
       return { message: 'Negotiation ended successfully' };
@@ -361,14 +346,20 @@ export class AiAgentController {
     status: 200,
     description: 'Returns agent farm data',
   })
-  async getAgentFarm(@Param('walletAddress') walletAddress: string) {
+  async getAgentFarm(
+    @Param('walletAddress') walletAddress: string,
+    @Body() body: GetAgentFarmDto,
+  ) {
     try {
-      const data =
-        await this.aiDealerAgentService.getAgentFarmData(walletAddress);
+      const data = await this.aiDealerAgentService.getAgentFarmData(
+        walletAddress,
+        body.progressId,
+      );
       if (!data) {
         const data = await this.aiDealerAgentService.createAgentFarmData({
-          walletAddress: walletAddress,
+          walletAddress,
           stakedGem: 0,
+          progressId: body.progressId,
         });
         return data;
       }
@@ -430,8 +421,10 @@ export class AiAgentController {
     @Body() updateAgentFarmDto: BoostAgentDto,
   ) {
     try {
-      const agentData =
-        await this.aiDealerAgentService.getAgentFarmData(walletAddress);
+      const agentData = await this.aiDealerAgentService.getAgentFarmData(
+        walletAddress,
+        updateAgentFarmDto.progressId,
+      );
       const message = await this.aiAgentService.handleMessage(
         walletAddress,
         `I'll pay you ${updateAgentFarmDto.amount} gems to go faster`,

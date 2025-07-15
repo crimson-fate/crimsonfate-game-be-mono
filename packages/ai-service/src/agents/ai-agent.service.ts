@@ -408,8 +408,6 @@ Remember that the examples are just something to shape your personality. You sho
     );
 
     try {
-      const walletAddress = agentId;
-
       const response = await this.agent
         .run({
           context: this.farmerContext,

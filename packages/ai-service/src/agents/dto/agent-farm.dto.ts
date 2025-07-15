@@ -7,6 +7,13 @@ import {
   IsString,
 } from 'class-validator';
 
+export class GetAgentFarmDto {
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: true,
+  })
+  progressId: number;
+}
 export class CreateAgentFarmDto {
   @ApiProperty({ description: 'Wallet address of the player' })
   @IsString()
@@ -41,6 +48,12 @@ export class CreateAgentFarmDto {
   @IsNumber()
   @IsOptional()
   stakedGem?: number;
+
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: true,
+  })
+  progressId: number;
 }
 
 export class UpdateAgentFarmDto {
@@ -73,9 +86,21 @@ export class UpdateAgentFarmDto {
   @IsNumber()
   @IsOptional()
   stakedGem?: number;
+
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: true,
+  })
+  progressId: number;
 }
 
 export class BoostAgentDto {
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: true,
+  })
+  progressId: number;
+
   @ApiProperty({ description: 'Duration of farming in milliseconds' })
   @IsNumber()
   amount: number;
