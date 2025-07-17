@@ -103,13 +103,17 @@ export class AiAgentController {
   })
   async startChatting(@Body() body: ChatDto): Promise<any> {
     try {
-      const data = await this.aiDealerAgentService.getAgentFarmData(
-        body.walletAddress,
-        body.progressId,
-      );
+      const isFarming = body.progressId
+        ? (
+            await this.aiDealerAgentService.getAgentFarmData(
+              body.walletAddress,
+              body.progressId,
+            )
+          ).isFarming
+        : false;
       const result = await this.aiAgentService.initialize(
         body.walletAddress,
-        data ? data.isFarming : false,
+        isFarming,
       );
       console.log(result);
       return result;
@@ -131,14 +135,18 @@ export class AiAgentController {
   async normalChat(@Body() body: ChatDto): Promise<any> {
     try {
       console.log('Running negotiation example...');
-      const data = await this.aiDealerAgentService.getAgentFarmData(
-        body.walletAddress,
-        body.progressId,
-      );
+      const isFarming = body.progressId
+        ? (
+            await this.aiDealerAgentService.getAgentFarmData(
+              body.walletAddress,
+              body.progressId,
+            )
+          ).isFarming
+        : false;
       const result = await this.aiAgentService.handleMessage(
         body.walletAddress,
         body.message,
-        data ? data.isFarming : false,
+        isFarming,
       );
       return result;
     } catch (error) {

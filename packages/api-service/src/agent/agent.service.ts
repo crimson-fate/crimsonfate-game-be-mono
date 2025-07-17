@@ -29,8 +29,11 @@ export class AgentService {
     saltNonce: number;
     progressId: number;
   }> {
-    const { id, multiplier } = body;
-    const agentProgress = await this.agentPlayerDataModel.findById(id);
+    const { address, multiplier, progressId } = body;
+    const agentProgress = await this.agentPlayerDataModel.findOne({
+      walletAddress: address,
+      progressId: progressId,
+    });
 
     if (!agentProgress) {
       throw new HttpException('Agent reward not found', HttpStatus.NOT_FOUND);
