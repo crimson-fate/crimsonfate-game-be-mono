@@ -538,13 +538,13 @@ export class DungeonService {
       },
       {
         $inc: {
-          gems: 15,
+          gems: 15000,
         },
       },
       { upsert: true, new: true },
     );
 
-    return { totalGems: dropGemDocument.gems, dropAmount: 15 };
+    return { totalGems: dropGemDocument.gems, dropAmount: 15000 };
   }
 
   async finishBoss(

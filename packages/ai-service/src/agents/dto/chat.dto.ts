@@ -19,7 +19,7 @@ export class ChatDto {
 
   @ApiProperty({
     description: 'Progress ID use when user go to dungeon',
-    required: true,
+    required: false,
   })
   progressId: number;
 }
