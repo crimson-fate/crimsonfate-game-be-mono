@@ -1,10 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   Equipment,
   EquipmentDocument,
 } from '@app/shared/models/schema/equipment.schema';
+import { Web3Service } from '@app/web3';
+import { PlayersService } from '../players/players.service';
+import { TransactionDto } from '../gem/dto/transaction.dto';
 
 @Injectable()
 export class EquipmentService {
@@ -13,6 +16,8 @@ export class EquipmentService {
   constructor(
     @InjectModel(Equipment.name)
     private equipmentModel: Model<EquipmentDocument>,
+    private readonly web3Service: Web3Service,
+    private readonly playerService: PlayersService,
   ) {}
 
   async getEquipmentData() {
@@ -80,5 +85,22 @@ export class EquipmentService {
         error: error.message,
       };
     }
+  }
+
+  async claimFirstEquipmentSuccess(
+    query: TransactionDto,
+    address: string,
+  ): Promise<boolean> {
+    const { transactionHash } = query;
+    const player = await this.playerService.getPlayerInfo(address);
+    const isSuccess = await this.web3Service.checkTransaction(transactionHash);
+    if (!isSuccess) {
+      throw new HttpException('Transaction failed', HttpStatus.BAD_REQUEST);
+    }
+
+    player.isClaimFirstEquipment = true;
+    await player.save();
+
+    return true;
   }
 }

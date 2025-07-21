@@ -9,6 +9,8 @@ import {
   DropGemDocument,
 } from '@app/shared/models/schema/drop-gem.schema';
 import { GameIdDto } from '../dungeon/dto/gameId.dto';
+import { TransactionDto } from './dto/transaction.dto';
+import { ClaimDungeonGemDto } from './dto/claimDungeonGem.dto';
 
 @Injectable()
 export class GemService {
@@ -31,9 +33,6 @@ export class GemService {
     const valAccount = this.web3Service.getValidatorAccount();
     const signature = await valAccount.signMessage(message);
     const formattedKeys = stark.formatSignature(signature);
-
-    player.isClaimInitialGem = true;
-    await player.save();
 
     return { saltNonce: player.initlaGemNonce, keys: formattedKeys };
   }
@@ -131,13 +130,49 @@ export class GemService {
     const signature = await valAccount.signMessage(message);
     const formattedKeys = stark.formatSignature(signature);
 
-    dropGemDocument.isClaimed = true;
-    await dropGemDocument.save();
-
     return {
       amount: dropGemDocument.gems,
       saltNonce: dropGemDocument.saltNonce,
       keys: formattedKeys,
     };
+  }
+
+  async claimDungeonGemSuccess(
+    query: ClaimDungeonGemDto,
+    address: string,
+  ): Promise<boolean> {
+    const { transactionHash, gameId } = query;
+    const player = await this.playerService.getPlayerInfo(address);
+    const isSuccess = await this.web3Service.checkTransaction(transactionHash);
+    if (!isSuccess) {
+      throw new HttpException('Transaction failed', HttpStatus.BAD_REQUEST);
+    }
+
+    const dropGemDocument = await this.dropGemModel.findOne({
+      player: player._id,
+      gameId,
+    });
+
+    dropGemDocument.isClaimed = true;
+    await dropGemDocument.save();
+
+    return true;
+  }
+
+  async claimInitialGemSuccess(
+    query: TransactionDto,
+    address: string,
+  ): Promise<boolean> {
+    const { transactionHash } = query;
+    const player = await this.playerService.getPlayerInfo(address);
+    const isSuccess = await this.web3Service.checkTransaction(transactionHash);
+    if (!isSuccess) {
+      throw new HttpException('Transaction failed', HttpStatus.BAD_REQUEST);
+    }
+
+    player.isClaimInitialGem = true;
+    await player.save();
+
+    return true;
   }
 }
