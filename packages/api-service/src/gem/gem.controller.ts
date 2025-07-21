@@ -5,6 +5,7 @@ import { BaseResult } from '@app/shared/utils/types';
 import { GemService } from './gem.service';
 import { GameIdDto } from '../dungeon/dto/gameId.dto';
 import { TransactionDto } from './dto/transaction.dto';
+import { ClaimDungeonGemDto } from './dto/claimDungeonGem.dto';
 
 @Controller('gem')
 @ApiTags('Gem')
@@ -46,7 +47,7 @@ export class GemController {
   }
 
   @JWT()
-  @Post('claim-dungeon-gem')
+  @Get('claim-dungeon-gem')
   @ApiOperation({ summary: 'Claim dungeon gem' })
   @ApiResponse({
     status: 200,
@@ -59,6 +60,24 @@ export class GemController {
     BaseResult<{ amount: number; saltNonce: number; keys: string[] }>
   > {
     const result = await this.gemService.claimDungeonGem(query, user.address);
+    return new BaseResult(result);
+  }
+
+  @JWT()
+  @Post('claim-dungeon-gem-success')
+  @ApiOperation({ summary: 'Claim dungeon gem success' })
+  @ApiResponse({
+    status: 200,
+    description: 'Update status of claim dungeon gem',
+  })
+  async claimDungeonGemSuccess(
+    @Body() query: ClaimDungeonGemDto,
+    @User() user: iInfoToken,
+  ): Promise<BaseResult<boolean>> {
+    const result = await this.gemService.claimDungeonGemSuccess(
+      query,
+      user.address,
+    );
     return new BaseResult(result);
   }
 }
