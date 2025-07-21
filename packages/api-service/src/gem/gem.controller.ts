@@ -4,6 +4,7 @@ import { iInfoToken, JWT, User } from '@app/shared/jwt';
 import { BaseResult } from '@app/shared/utils/types';
 import { GemService } from './gem.service';
 import { GameIdDto } from '../dungeon/dto/gameId.dto';
+import { TransactionDto } from './dto/transaction.dto';
 
 @Controller('gem')
 @ApiTags('Gem')
@@ -12,7 +13,7 @@ export class GemController {
 
   @JWT()
   @Get('claim-initial-gem')
-  @ApiOperation({ summary: 'Claim initial gem' })
+  @ApiOperation({ summary: 'Get claim initial gem params' })
   @ApiResponse({
     status: 200,
     description: 'Return keys to claim gem',
@@ -24,6 +25,24 @@ export class GemController {
   > {
     const result = await this.gemService.claimInitialGem(user.address);
     return new BaseResult({ amount: 50, ...result });
+  }
+
+  @JWT()
+  @Post('claim-initial-gem-success')
+  @ApiOperation({ summary: 'Claim initial gem success' })
+  @ApiResponse({
+    status: 200,
+    description: 'Update status of claim initial gem',
+  })
+  async claimInitialGemSuccess(
+    @Body() query: TransactionDto,
+    @User() user: iInfoToken,
+  ): Promise<BaseResult<boolean>> {
+    const result = await this.gemService.claimInitialGemSuccess(
+      query,
+      user.address,
+    );
+    return new BaseResult(result);
   }
 
   @JWT()

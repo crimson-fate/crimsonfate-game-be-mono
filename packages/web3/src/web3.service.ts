@@ -1,13 +1,13 @@
 import configuration from '@app/shared/configuration';
 import { Injectable, Logger } from '@nestjs/common';
-import { Account, Provider, stark, TypedData } from 'starknet';
+import { Account, stark, TypedData, RpcProvider } from 'starknet';
 
 @Injectable()
 export class Web3Service {
   logger = new Logger(Web3Service.name);
 
-  getProvider() {
-    const provider = new Provider({ nodeUrl: configuration().RPC_URL });
+  getProvider(): RpcProvider {
+    const provider = new RpcProvider({ nodeUrl: configuration().RPC_URL });
     return provider;
   }
 
@@ -26,5 +26,12 @@ export class Web3Service {
     const account = this.getValidatorAccount();
     const signature = await account.signMessage(message);
     return stark.formatSignature(signature);
+  }
+
+  async checkTransaction(txHash: string): Promise<boolean> {
+    const provider = this.getProvider();
+    await provider.waitForTransaction(txHash);
+    const txReceipt = await provider.getTransactionReceipt(txHash);
+    return txReceipt.isSuccess();
   }
 }

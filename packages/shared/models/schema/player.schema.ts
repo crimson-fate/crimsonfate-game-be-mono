@@ -18,6 +18,9 @@ export class Players extends Document {
   @Prop({ type: SchemaTypes.Boolean, default: false })
   isClaimInitialGem?: boolean;
 
+  @Prop({ type: SchemaTypes.Boolean, default: false })
+  isClaimFirstEquipment?: boolean;
+
   @Prop()
   initlaGemNonce: number;
 }
