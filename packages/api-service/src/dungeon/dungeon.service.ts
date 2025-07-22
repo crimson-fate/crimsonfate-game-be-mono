@@ -118,6 +118,12 @@ export class DungeonService {
         },
       },
     );
+
+    await this.dropGemModel.create({
+      player: player._id,
+      gameId: newProgress.gameId.toString(),
+      gem: 0,
+    });
     return result;
   }
 
