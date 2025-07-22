@@ -47,7 +47,7 @@ export class GemController {
   }
 
   @JWT()
-  @Get('claim-dungeon-gem')
+  @Post('claim-dungeon-gem')
   @ApiOperation({ summary: 'Claim dungeon gem' })
   @ApiResponse({
     status: 200,
