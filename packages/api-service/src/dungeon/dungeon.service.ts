@@ -123,6 +123,7 @@ export class DungeonService {
       player: player._id,
       gameId: newProgress.gameId.toString(),
       gem: 0,
+      saltNonce: Math.floor(Date.now() / 1000),
     });
     return result;
   }
