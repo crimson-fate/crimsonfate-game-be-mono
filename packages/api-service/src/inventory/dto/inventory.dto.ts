@@ -114,11 +114,6 @@ export class GameInventoryDto {
   @IsBoolean()
   sortByType: boolean;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => GameEquipmentDto)
-  lstOwned: GameEquipmentDto[];
-
   @IsObject()
   dicEquippedKey: Record<string, string>;
 }
