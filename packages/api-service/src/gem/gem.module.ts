@@ -9,12 +9,17 @@ import {
   DropGem,
   DropGemSchema,
 } from '@app/shared/models/schema/drop-gem.schema';
+import {
+  PlayerTrophyProgress,
+  PlayerTrophyProgressSchema,
+} from '@app/shared/models/schema/player-trophy.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Players.name, schema: PlayerSchema },
       { name: DropGem.name, schema: DropGemSchema },
+      { name: PlayerTrophyProgress.name, schema: PlayerTrophyProgressSchema },
     ]),
   ],
   providers: [GemService, Web3Service, PlayersService],

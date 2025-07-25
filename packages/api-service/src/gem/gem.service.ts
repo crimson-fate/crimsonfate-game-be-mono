@@ -11,12 +11,18 @@ import {
 import { GameIdDto } from '../dungeon/dto/gameId.dto';
 import { TransactionDto } from './dto/transaction.dto';
 import { ClaimDungeonGemDto } from './dto/claimDungeonGem.dto';
+import {
+  PlayerTrophyProgress,
+  PlayerTrophyProgressDocument,
+} from '@app/shared/models/schema/player-trophy.schema';
 
 @Injectable()
 export class GemService {
   constructor(
     @InjectModel(DropGem.name)
     private readonly dropGemModel: Model<DropGemDocument>,
+    @InjectModel(PlayerTrophyProgress.name)
+    private readonly playerTrophyProgressModel: Model<PlayerTrophyProgressDocument>,
     private readonly playerService: PlayersService,
     private readonly web3Service: Web3Service,
   ) {}
@@ -102,7 +108,17 @@ export class GemService {
   async claimDungeonGem(
     query: GameIdDto,
     address: string,
-  ): Promise<{ amount: number; saltNonce: number; keys: string[] }> {
+  ): Promise<{
+    amount: number;
+    saltNonce: number;
+    keys: string[];
+    achievement: {
+      taskId: string;
+      count: number;
+      time: number;
+      keys: string[];
+    } | null;
+  }> {
     const player = await this.playerService.getPlayerInfo(address);
     const { gameId } = query;
     const dropGemDocument = await this.dropGemModel.findOne({
@@ -130,10 +146,85 @@ export class GemService {
     const signature = await valAccount.signMessage(message);
     const formattedKeys = stark.formatSignature(signature);
 
+    const amountOfClaimedGem = await this.dropGemModel.aggregate([
+      {
+        $match: {
+          player: player._id,
+          isClaimed: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          amount: { $sum: '$gems' },
+        },
+      },
+    ]);
+    const totalGems = amountOfClaimedGem[0]
+      ? amountOfClaimedGem[0].amount + dropGemDocument.gems
+      : dropGemDocument.gems;
+
+    let taskId = 0;
+    let count = 0;
+    const playerTrophyProgresses = await this.playerTrophyProgressModel.find({
+      player: player._id,
+      taskId: { $in: [6, 7, 8, 9, 10] },
+    });
+    if (
+      totalGems >= 1000 &&
+      playerTrophyProgresses.find((i) => i.taskId === '6')
+    ) {
+      taskId = 6;
+      count = 1000;
+    }
+    if (
+      totalGems >= 3000 &&
+      playerTrophyProgresses.find((i) => i.taskId === '7')
+    ) {
+      taskId = 7;
+      count = 3000;
+    }
+    if (
+      totalGems >= 10000 &&
+      playerTrophyProgresses.find((i) => i.taskId === '8')
+    ) {
+      taskId = 8;
+      count = 10000;
+    }
+    if (
+      totalGems >= 20000 &&
+      playerTrophyProgresses.find((i) => i.taskId === '9')
+    ) {
+      taskId = 9;
+      count = 20000;
+    }
+    if (
+      totalGems >= 50000 &&
+      playerTrophyProgresses.find((i) => i.taskId === '10')
+    ) {
+      taskId = 10;
+      count = 50000;
+    }
+    const time = Math.floor(Date.now() / 1e3);
+
     return {
       amount: dropGemDocument.gems,
       saltNonce: dropGemDocument.saltNonce,
       keys: formattedKeys,
+      achievement:
+        taskId > 0 && count > 0
+          ? {
+              taskId: taskId.toString(),
+              count,
+              time,
+              keys: await this.web3Service.signTaskProgress(
+                player.address,
+                taskId.toString(),
+                count,
+                time,
+              ),
+            }
+          : null,
     };
   }
 

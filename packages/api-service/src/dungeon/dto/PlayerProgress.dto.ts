@@ -14,4 +14,10 @@ export class PlayerProgressDto {
   startTime: number;
   endTime: number;
   isCompleted: boolean;
+  achievements: {
+    taskId: string;
+    count: number;
+    time: number;
+    keys: string[];
+  } | null;
 }

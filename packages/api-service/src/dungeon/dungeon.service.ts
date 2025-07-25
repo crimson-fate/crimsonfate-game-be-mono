@@ -24,6 +24,11 @@ import {
   BossReward,
   BossRewardDocument,
 } from '@app/shared/models/schema/boss-reward.schema';
+import { Web3Service } from '@app/web3';
+import {
+  PlayerTrophyProgress,
+  PlayerTrophyProgressDocument,
+} from '@app/shared/models/schema/player-trophy.schema';
 
 @Injectable()
 export class DungeonService {
@@ -40,7 +45,10 @@ export class DungeonService {
     private readonly distributeBossRewardModel: Model<DistributeBossRewardDocument>,
     @InjectModel(BossReward.name)
     private readonly bossRewardModel: Model<BossRewardDocument>,
+    @InjectModel(PlayerTrophyProgress.name)
+    private readonly playerTrophyProgressModel: Model<PlayerTrophyProgressDocument>,
     private readonly playerService: PlayersService,
+    private readonly web3Service: Web3Service,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
@@ -86,6 +94,40 @@ export class DungeonService {
     const progress = await (
       await newProgress.save()
     ).populate(['player', 'season']);
+
+    const amountOfNewGame = await this.playerProgressModel.countDocuments({
+      player: player._id,
+      gameId: newProgress.gameId.toString(),
+      wave: 1,
+    });
+    let count = 0;
+    let taskId = 0;
+    const time = Math.floor(Date.now() / 1e3);
+    if (amountOfNewGame === 100) {
+      taskId = 1;
+      count = 100;
+    } else if (amountOfNewGame === 200) {
+      taskId = 2;
+      count = 200;
+    } else if (amountOfNewGame === 400) {
+      taskId = 3;
+      count = 400;
+    } else if (amountOfNewGame === 800) {
+      taskId = 4;
+      count = 800;
+    } else if (amountOfNewGame === 1500) {
+      taskId = 5;
+      count = 1500;
+    }
+
+    let playerTrophyProgress;
+    if (taskId > 0) {
+      playerTrophyProgress = await this.playerTrophyProgressModel.findOne({
+        player: player._id,
+        taskId: taskId.toString(),
+      });
+    }
+
     const result: PlayerProgressDto = {
       player: {
         address: progress.player.address,
@@ -104,6 +146,20 @@ export class DungeonService {
       startTime: progress.startTime,
       endTime: progress.endTime,
       isCompleted: progress.isCompleted,
+      achievements:
+        !playerTrophyProgress && taskId > 0 && count > 0
+          ? {
+              taskId: taskId.toString(),
+              count,
+              time,
+              keys: await this.web3Service.signTaskProgress(
+                player.address,
+                taskId.toString(),
+                count,
+                time,
+              ),
+            }
+          : null,
     };
 
     await this.dropGemModel.updateMany(
@@ -173,6 +229,7 @@ export class DungeonService {
       startTime: playerProgress.startTime,
       endTime: playerProgress.endTime,
       isCompleted: playerProgress.isCompleted,
+      achievements: null,
     };
     return result;
   }
@@ -215,6 +272,78 @@ export class DungeonService {
     playerProgress.isCompleted = true;
     playerProgress.endTime = now;
     await playerProgress.save();
+    const timeOfFinish = Math.floor(Date.now() / 1e3);
+    if (playerProgress.wave === 50) {
+      const playerTrophyProgress = await this.playerTrophyProgressModel.findOne(
+        {
+          player: player._id,
+          taskId: '14',
+        },
+      );
+
+      return {
+        player: {
+          address: playerProgress.player.address,
+          username: playerProgress.player.username,
+        },
+        gameId: playerProgress.gameId.toString(),
+        wave: playerProgress.wave,
+        season: currentSeason
+          ? {
+              id: playerProgress.season._id,
+              name: playerProgress.season.name,
+              startDate: playerProgress.season.startDate,
+              endDate: playerProgress.season.endDate,
+            }
+          : null,
+        startTime: playerProgress.startTime,
+        endTime: playerProgress.endTime,
+        isCompleted: playerProgress.isCompleted,
+        achievements: !playerTrophyProgress
+          ? {
+              taskId: '14',
+              count: 1,
+              time: timeOfFinish,
+              keys: await this.web3Service.signTaskProgress(
+                player.address,
+                '14',
+                1,
+                timeOfFinish,
+              ),
+            }
+          : null,
+      };
+    }
+
+    let achievements = null;
+    if (
+      playerProgress.wave === 20 ||
+      playerProgress.wave === 30 ||
+      playerProgress.wave === 40
+    ) {
+      const taskId =
+        playerProgress.wave === 20 ? 11 : playerProgress.wave === 30 ? 12 : 13;
+
+      const playerTrophyProgress = await this.playerTrophyProgressModel.findOne(
+        {
+          player: player._id,
+          taskId,
+        },
+      );
+      if (!playerTrophyProgress) {
+        achievements = {
+          taskId,
+          count: 1,
+          time: timeOfFinish,
+          keys: await this.web3Service.signTaskProgress(
+            player.address,
+            taskId.toString(),
+            1,
+            timeOfFinish,
+          ),
+        };
+      }
+    }
 
     const newProgress = new this.playerProgressModel({
       player: player,
@@ -244,6 +373,7 @@ export class DungeonService {
       startTime: progress.startTime,
       endTime: progress.endTime,
       isCompleted: progress.isCompleted,
+      achievements,
     };
     return result;
   }
@@ -304,6 +434,7 @@ export class DungeonService {
       startTime: progress.startTime,
       endTime: progress.endTime,
       isCompleted: progress.isCompleted,
+      achievements: null,
     };
     return result;
   }

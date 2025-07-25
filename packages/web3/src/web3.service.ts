@@ -1,6 +1,6 @@
 import configuration from '@app/shared/configuration';
 import { Injectable, Logger } from '@nestjs/common';
-import { Account, stark, TypedData, RpcProvider } from 'starknet';
+import { Account, stark, TypedData, RpcProvider, shortString } from 'starknet';
 
 @Injectable()
 export class Web3Service {
@@ -25,6 +25,65 @@ export class Web3Service {
   async validatorSignMessage(message: TypedData): Promise<string[]> {
     const account = this.getValidatorAccount();
     const signature = await account.signMessage(message);
+    return stark.formatSignature(signature);
+  }
+
+  async signTaskProgress(
+    player: string,
+    taskId: string,
+    count: number,
+    time: number,
+  ) {
+    const account = this.getValidatorAccount();
+    const signature = await account.signMessage({
+      types: {
+        StarkNetDomain: [
+          {
+            name: 'name',
+            type: 'felt',
+          },
+          {
+            name: 'version',
+            type: 'felt',
+          },
+          {
+            name: 'chainId',
+            type: 'felt',
+          },
+        ],
+        ProgressTaskParams: [
+          {
+            name: 'player',
+            type: 'felt',
+          },
+          {
+            name: 'task_id',
+            type: 'felt',
+          },
+          {
+            name: 'count',
+            type: 'u128',
+          },
+          {
+            name: 'time',
+            type: 'u64',
+          },
+        ],
+      },
+      primaryType: 'ProgressTaskParams',
+      domain: {
+        name: 'crimson-fate',
+        version: '1',
+        chainId: shortString.encodeShortString('SN_MAIN'),
+      },
+      message: {
+        player,
+        task_id: taskId,
+        count,
+        time,
+      },
+    });
+
     return stark.formatSignature(signature);
   }
 

@@ -25,6 +25,10 @@ import {
   BossReward,
   BossRewardSchema,
 } from '@app/shared/models/schema/boss-reward.schema';
+import {
+  PlayerTrophyProgress,
+  PlayerTrophyProgressSchema,
+} from '@app/shared/models/schema/player-trophy.schema';
 
 @Module({
   imports: [
@@ -35,6 +39,7 @@ import {
       { name: DropGem.name, schema: DropGemSchema },
       { name: DistributeBossReward.name, schema: DistributeBossRewardSchema },
       { name: BossReward.name, schema: BossRewardSchema },
+      { name: PlayerTrophyProgress.name, schema: PlayerTrophyProgressSchema },
     ]),
   ],
   providers: [
