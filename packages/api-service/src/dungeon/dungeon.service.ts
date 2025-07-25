@@ -102,30 +102,48 @@ export class DungeonService {
     });
     let count = 0;
     let taskId = 0;
+    let isFound = false;
     const time = Math.floor(Date.now() / 1e3);
-    if (amountOfNewGame === 100) {
-      taskId = 1;
-      count = 100;
-    } else if (amountOfNewGame === 200) {
-      taskId = 2;
-      count = 200;
-    } else if (amountOfNewGame === 400) {
-      taskId = 3;
-      count = 400;
-    } else if (amountOfNewGame === 800) {
-      taskId = 4;
-      count = 800;
-    } else if (amountOfNewGame === 1500) {
-      taskId = 5;
-      count = 1500;
+
+    const playerTrophyProgresses = await this.playerTrophyProgressModel.find({
+      player: player._id,
+      taskId: { $in: [1, 2, 3, 4, 5] },
+    });
+    if (amountOfNewGame >= 100) {
+      if (playerTrophyProgresses.find((i) => i.taskId === '1')) {
+        taskId = 1;
+        count = 100;
+        isFound = true;
+      }
+    }
+    if (amountOfNewGame >= 200 && !isFound) {
+      if (playerTrophyProgresses.find((i) => i.taskId === '2')) {
+        taskId = 2;
+        count = 200;
+        isFound = true;
+      }
     }
 
-    let playerTrophyProgress;
-    if (taskId > 0) {
-      playerTrophyProgress = await this.playerTrophyProgressModel.findOne({
-        player: player._id,
-        taskId: taskId.toString(),
-      });
+    if (amountOfNewGame >= 400 && !isFound) {
+      if (playerTrophyProgresses.find((i) => i.taskId === '3')) {
+        taskId = 3;
+        count = 400;
+        isFound = true;
+      }
+    }
+    if (amountOfNewGame >= 800 && !isFound) {
+      if (playerTrophyProgresses.find((i) => i.taskId === '4')) {
+        taskId = 4;
+        count = 800;
+        isFound = true;
+      }
+    }
+    if (amountOfNewGame >= 1500 && !isFound) {
+      if (playerTrophyProgresses.find((i) => i.taskId === '5')) {
+        taskId = 5;
+        count = 1500;
+        isFound = true;
+      }
     }
 
     const result: PlayerProgressDto = {
@@ -147,7 +165,7 @@ export class DungeonService {
       endTime: progress.endTime,
       isCompleted: progress.isCompleted,
       achievements:
-        !playerTrophyProgress && taskId > 0 && count > 0
+        taskId > 0 && count > 0
           ? {
               taskId: taskId.toString(),
               count,

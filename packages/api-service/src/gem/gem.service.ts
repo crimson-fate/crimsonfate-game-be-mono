@@ -166,6 +166,7 @@ export class GemService {
 
     let taskId = 0;
     let count = 0;
+    let isFound = false;
     const playerTrophyProgresses = await this.playerTrophyProgressModel.find({
       player: player._id,
       taskId: { $in: [6, 7, 8, 9, 10] },
@@ -176,34 +177,43 @@ export class GemService {
     ) {
       taskId = 6;
       count = 1000;
+      isFound = true;
     }
     if (
       totalGems >= 3000 &&
+      !isFound &&
       playerTrophyProgresses.find((i) => i.taskId === '7')
     ) {
       taskId = 7;
       count = 3000;
+      isFound = true;
     }
     if (
       totalGems >= 10000 &&
+      !isFound &&
       playerTrophyProgresses.find((i) => i.taskId === '8')
     ) {
       taskId = 8;
       count = 10000;
+      isFound = true;
     }
     if (
       totalGems >= 20000 &&
+      !isFound &&
       playerTrophyProgresses.find((i) => i.taskId === '9')
     ) {
       taskId = 9;
       count = 20000;
+      isFound = true;
     }
     if (
       totalGems >= 50000 &&
+      !isFound &&
       playerTrophyProgresses.find((i) => i.taskId === '10')
     ) {
       taskId = 10;
       count = 50000;
+      isFound = true;
     }
     const time = Math.floor(Date.now() / 1e3);
 
