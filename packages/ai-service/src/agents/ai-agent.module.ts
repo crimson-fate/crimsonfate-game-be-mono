@@ -46,6 +46,10 @@ import configuration from '@app/shared/configuration';
 import { Web3Service } from '@app/web3';
 import { JwtService } from '@nestjs/jwt';
 import { Seasons, SeasonSchema } from '@app/shared/models/schema/season.schema';
+import {
+  PlayerTrophyProgress,
+  PlayerTrophyProgressSchema,
+} from '@app/shared/models/schema/player-trophy.schema';
 
 @Module({
   imports: [
@@ -60,6 +64,7 @@ import { Seasons, SeasonSchema } from '@app/shared/models/schema/season.schema';
       { name: DropGem.name, schema: DropGemSchema },
       { name: DistributeBossReward.name, schema: DistributeBossRewardSchema },
       { name: BossReward.name, schema: BossRewardSchema },
+      { name: PlayerTrophyProgress.name, schema: PlayerTrophyProgressSchema },
     ]),
   ],
   controllers: [AiAgentController],
