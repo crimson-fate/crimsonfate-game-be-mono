@@ -113,7 +113,7 @@ export class GemService {
     amount: number;
     saltNonce: number;
     keys: string[];
-    achievement: {
+    achievements: {
       taskId: string;
       count: number;
       time: number;
@@ -222,7 +222,7 @@ export class GemService {
       amount: dropGemDocument.gems,
       saltNonce: dropGemDocument.saltNonce,
       keys: formattedKeys,
-      achievement:
+      achievements:
         taskId > 0 && count > 0
           ? {
               taskId: taskId.toString(),
