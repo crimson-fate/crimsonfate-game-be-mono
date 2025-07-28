@@ -15,6 +15,7 @@ import {
   PlayerTrophyProgress,
   PlayerTrophyProgressDocument,
 } from '@app/shared/models/schema/player-trophy.schema';
+import { parseUnits } from 'ethers';
 
 @Injectable()
 export class GemService {
@@ -97,7 +98,7 @@ export class GemService {
       },
       message: {
         player: address,
-        amount: uint256.bnToUint256(amount * 1e18),
+        amount: uint256.bnToUint256(parseUnits(amount.toString(), 18)),
         salt_nonce: nonce,
       },
     };
