@@ -29,6 +29,10 @@ import {
   PlayerTrophyProgress,
   PlayerTrophyProgressDocument,
 } from '@app/shared/models/schema/player-trophy.schema';
+import {
+  PlayerActivity,
+  PlayerActivityDocument,
+} from '@app/shared/models/schema/player-activity.schema';
 
 @Injectable()
 export class DungeonService {
@@ -47,6 +51,8 @@ export class DungeonService {
     private readonly bossRewardModel: Model<BossRewardDocument>,
     @InjectModel(PlayerTrophyProgress.name)
     private readonly playerTrophyProgressModel: Model<PlayerTrophyProgressDocument>,
+    @InjectModel(PlayerActivity.name)
+    private readonly playerActivityModel: Model<PlayerActivityDocument>,
     private readonly playerService: PlayersService,
     private readonly web3Service: Web3Service,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
@@ -199,6 +205,13 @@ export class DungeonService {
       gem: 0,
       saltNonce: Math.floor(Date.now() / 1000),
     });
+
+    await this.playerActivityModel.create({
+      player: player._id,
+      message: 'has started a new dungeon run',
+      timestamp: Date.now(),
+    });
+
     return result;
   }
 
@@ -363,6 +376,26 @@ export class DungeonService {
       }
     }
 
+    const boss =
+      playerProgress.wave === 10
+        ? 'Margit'
+        : playerProgress.wave === 20
+          ? 'Vyrath'
+          : playerProgress.wave === 30
+            ? 'Lysmera'
+            : playerProgress.wave === 40
+              ? 'Gorathax'
+              : playerProgress.wave === 50
+                ? 'Maldrakar'
+                : null;
+    if (boss) {
+      await this.playerActivityModel.create({
+        player: player._id,
+        message: `slay ${boss} Boss`,
+        timestamp: Date.now(),
+      });
+    }
+
     const newProgress = new this.playerProgressModel({
       player: player,
       wave: playerProgress.wave + 1,
@@ -434,6 +467,13 @@ export class DungeonService {
     const progress = await (
       await playerProgress.save()
     ).populate(['player', 'season']);
+
+    await this.playerActivityModel.create({
+      player: player._id,
+      message: `died at wave ${playerProgress.wave}`,
+      timestamp: Date.now(),
+    });
+
     const result: PlayerProgressDto = {
       player: {
         address: progress.player.address,

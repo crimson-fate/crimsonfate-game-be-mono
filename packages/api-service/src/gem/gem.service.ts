@@ -16,6 +16,10 @@ import {
   PlayerTrophyProgressDocument,
 } from '@app/shared/models/schema/player-trophy.schema';
 import { parseUnits } from 'ethers';
+import {
+  PlayerActivity,
+  PlayerActivityDocument,
+} from '@app/shared/models/schema/player-activity.schema';
 
 @Injectable()
 export class GemService {
@@ -24,6 +28,8 @@ export class GemService {
     private readonly dropGemModel: Model<DropGemDocument>,
     @InjectModel(PlayerTrophyProgress.name)
     private readonly playerTrophyProgressModel: Model<PlayerTrophyProgressDocument>,
+    @InjectModel(PlayerActivity.name)
+    private readonly playerActivityModel: Model<PlayerActivityDocument>,
     private readonly playerService: PlayersService,
     private readonly web3Service: Web3Service,
   ) {}
@@ -257,7 +263,11 @@ export class GemService {
 
     dropGemDocument.isClaimed = true;
     await dropGemDocument.save();
-
+    await this.playerActivityModel.create({
+      player: player._id,
+      message: `claimed ${dropGemDocument.gems} GEM`,
+      timestamp: Date.now(),
+    });
     return true;
   }
 

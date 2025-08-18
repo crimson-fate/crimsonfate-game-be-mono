@@ -22,6 +22,7 @@ import { GemModule } from './gem/gem.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AgentModule } from './agent/agent.module';
 import { TrophyModule } from './trophy/trophy.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { TrophyModule } from './trophy/trophy.module';
     GemModule,
     AgentModule,
     TrophyModule,
+    ActivitiesModule,
   ],
   controllers: [FallbackController],
 })
