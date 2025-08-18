@@ -13,6 +13,10 @@ import {
   PlayerTrophyProgress,
   PlayerTrophyProgressSchema,
 } from '@app/shared/models/schema/player-trophy.schema';
+import {
+  PlayerActivity,
+  playerActivitySchema,
+} from '@app/shared/models/schema/player-activity.schema';
 
 @Module({
   imports: [
@@ -20,6 +24,7 @@ import {
       { name: Players.name, schema: PlayerSchema },
       { name: DropGem.name, schema: DropGemSchema },
       { name: PlayerTrophyProgress.name, schema: PlayerTrophyProgressSchema },
+      { name: PlayerActivity.name, schema: playerActivitySchema },
     ]),
   ],
   providers: [GemService, Web3Service, PlayersService],
