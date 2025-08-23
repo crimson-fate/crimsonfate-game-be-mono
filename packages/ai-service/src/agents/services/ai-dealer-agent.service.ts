@@ -167,8 +167,7 @@ export class AiDealerAgentService {
         *   Use 'hagniResponseOutput' with outcome 'asking'.
     4.  **Negotiating with Cowards (Offer Processing)**:
         *   Analyze the player's message: '{{lastPlayerRawMessage}}'.
-        *   **Detect End/Stop/No-Buy Intent**: If the player's message clearly indicates they do not want to buy, want to stop negotiating, or want to end the conversation (e.g., "I don't want it", "no thanks", "stop", "not interested", "goodbye", "maybe later", etc.), immediately end the negotiation. Respond politely, acknowledge their decision, and set the negotiation outcome to 'ended' in 'hagniResponseOutput'.
-        *   **Extract Offer**: Look for a clear numerical offer (e.g., "I'll give you 50", "how about 75 gems?", "55?"). If found, \`extractedOffer\` is that number. If ambiguous, assume no offer, they're wasting your time.
+        *   **Extract Offer**: Look for a clear numerical offer (e.g., "I'll give you 50", "how about 75 gems?", "55?"). If found, \`extractedOffer\` is that number. If ambiguous, assume no offer and keep pushing for a proper price.
         *   **No Clear Offer / Just Chatting**:
             *   **Respond with impatience or menace. If they asked a question, answer it with flair. If they're just talking, you can nudge them. Example: "you done talking? what do you think of these {{itemDescription}}? They didn't just jump into my bag, you know! My current asking is {{currentAskingPrice}} gems."
                 *   Use 'hagniResponseOutput' with outcome 'informing' or 'asking'.
@@ -298,7 +297,6 @@ export class AiDealerAgentService {
                     'rejected',
                     'countered',
                     'informing',
-                    'ended',
                   ])
                   .describe('The logical outcome of this turn based on rules.'),
                 extractedOffer: z
@@ -388,13 +386,7 @@ export class AiDealerAgentService {
                       );
                       // No price/status change usually
                       break;
-                    case 'ended': // Explicitly ended by LLM or action
-                      state.negotiationActive = false;
-                      simpleUI.logMessage(
-                        LogLevel.INFO,
-                        `[Output ${negotiationId}] Negotiation ended via output.`,
-                      );
-                      break;
+
                   }
                   // Persist changes made in this handler
                   // await ctx.updateMemory(state); // updateMemory might not exist on OutputCallContext, state is auto-persisted
