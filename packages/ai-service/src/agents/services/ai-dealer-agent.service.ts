@@ -588,7 +588,7 @@ export class AiDealerAgentService {
   ): Promise<AgentPlayerData> {
     return this.agentPlayerDataModel
       .findOneAndUpdate(
-        { walletAddress, progressId: updateAgentFarmDto.progressId },
+        { walletAddress },
         { $set: updateAgentFarmDto },
         { new: true },
       )

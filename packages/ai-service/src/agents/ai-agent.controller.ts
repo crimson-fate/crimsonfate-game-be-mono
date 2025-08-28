@@ -13,7 +13,7 @@ import {
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { AiAgentService } from './ai-agent.service';
-import { ChatDto, WalletDto } from './dto/chat.dto';
+import { ChatDto, DealChatDto, WalletDto } from './dto/chat.dto';
 import {
   BoostAgentDto,
   CreateAgentFarmDto,
@@ -164,7 +164,7 @@ export class AiAgentController {
     status: 200,
     description: 'Agent greets and suggest the initial price',
   })
-  async startDealing(@Body() body: ChatDto): Promise<any> {
+  async startDealing(@Body() body: DealChatDto): Promise<any> {
     try {
       console.log('Running negotiation example...');
       const data = await this.aiDealerAgentService.getAgentFarmData(
@@ -211,7 +211,7 @@ export class AiAgentController {
           minSellRatio: 0.85,
           maxDiscount: 0.05,
         },
-        playerMoney.dicCommonResource.Coin,
+        body.playerMoney,
       );
       console.log(result);
       return result;
@@ -230,7 +230,7 @@ export class AiAgentController {
     status: 200,
     description: 'Returns the result of the negotiation example',
   })
-  async hagniChat(@Body() body: ChatDto): Promise<any> {
+  async hagniChat(@Body() body: DealChatDto): Promise<any> {
     try {
       console.log('Running negotiation...');
       const playerMoney = await this.playerResourceModel.findOne({
@@ -239,7 +239,7 @@ export class AiAgentController {
       const result = await this.aiDealerAgentService.handleMessage(
         body.walletAddress,
         body.message,
-        playerMoney.dicCommonResource.Coin,
+        body.playerMoney
       );
       if (result.outcome && result.outcome === 'accepted') {
         const data = await this.aiDealerAgentService.getAgentFarmData(
@@ -344,7 +344,7 @@ export class AiAgentController {
     }
   }
 
-  @Get('farm/:walletAddress')
+  @Post('farm/:walletAddress')
   @ApiOperation({ summary: 'Get agent farm data by wallet address' })
   @ApiParam({
     name: 'walletAddress',

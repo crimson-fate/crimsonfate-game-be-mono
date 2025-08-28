@@ -24,6 +24,38 @@ export class ChatDto {
   progressId: number;
 }
 
+
+export class DealChatDto {
+  @ApiProperty({
+    description: 'Message to send to the AI agent',
+    example: 'What should I do next?',
+  })
+  @IsString()
+  @MinLength(1)
+  message: string;
+
+  @ApiProperty({
+    description: 'Wallet address of the user',
+    example: '0x1234567890abcdef1234567890abcdef12345678',
+    required: false,
+  })
+  @IsString()
+  walletAddress?: string;
+
+  @ApiProperty({
+    description: 'Progress ID use when user go to dungeon',
+    required: false,
+  })
+  progressId: number;
+
+  @ApiProperty({
+    description: 'Player Money',
+    example: 1000,
+    required: true,
+  })
+  playerMoney: number;
+}
+
 export class WalletDto {
   @ApiProperty({
     description: 'Wallet address of the user',
