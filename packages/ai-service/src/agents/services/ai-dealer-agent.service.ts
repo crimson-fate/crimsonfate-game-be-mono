@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   createDreams,
   context,
@@ -21,7 +21,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AgentPlayerData } from '@app/shared/models/schema/agent-player-data.schema';
 import { CreateAgentFarmDto, UpdateAgentFarmDto } from '../dto/agent-farm.dto';
 
-import { EventEmitter } from 'events'; // Using EventEmitter for simulating input
+// import { EventEmitter } from 'events'; // Using EventEmitter for simulating input
 import { parseAgentResponse } from '../utils/response-parser';
 
 // Initialize the UI
@@ -59,7 +59,7 @@ interface HagniNegotiationState {
 
 // --- NestJS Service ---
 @Injectable()
-export class AiDealerAgentService {
+export class AiDealerAgentService implements OnModuleInit {
   private readonly logger = new Logger(AiDealerAgentService.name);
   private agent; // Type the agent
   private readonly goalContext;
@@ -386,7 +386,6 @@ export class AiDealerAgentService {
                       );
                       // No price/status change usually
                       break;
-
                   }
                   // Persist changes made in this handler
                   // await ctx.updateMemory(state); // updateMemory might not exist on OutputCallContext, state is auto-persisted
@@ -410,6 +409,53 @@ export class AiDealerAgentService {
     this.agent.start();
 
     simpleUI.logMessage(LogLevel.INFO, 'Hagni agent background loop started.');
+  }
+
+  async onModuleInit() {
+    // One-time index migration to remove legacy unique indexes and ensure compound index
+    try {
+      const indexes = await this.agentPlayerDataModel.collection.indexes();
+      const indexNames = indexes.map((i) => i.name);
+
+      // Drop legacy unique single-field indexes if they exist
+      if (indexNames.includes('walletAddress_1')) {
+        try {
+          await this.agentPlayerDataModel.collection.dropIndex(
+            'walletAddress_1',
+          );
+          this.logger.log('Dropped legacy index walletAddress_1');
+        } catch (err) {
+          this.logger.warn(`Could not drop index walletAddress_1: ${err}`);
+        }
+      }
+      if (indexNames.includes('progressId_1')) {
+        try {
+          await this.agentPlayerDataModel.collection.dropIndex('progressId_1');
+          this.logger.log('Dropped legacy index progressId_1');
+        } catch (err) {
+          this.logger.warn(`Could not drop index progressId_1: ${err}`);
+        }
+      }
+
+      // Ensure compound unique index exists
+      if (!indexNames.includes('uniq_wallet_progress')) {
+        try {
+          await this.agentPlayerDataModel.collection.createIndex(
+            { walletAddress: 1, progressId: 1 },
+            { unique: true, name: 'uniq_wallet_progress' },
+          );
+          this.logger.log(
+            'Created compound unique index uniq_wallet_progress on (walletAddress, progressId)',
+          );
+        } catch (err) {
+          this.logger.error(
+            `Failed to create compound index uniq_wallet_progress: ${err}`,
+          );
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`Index migration check failed: ${err}`);
+    }
   }
 
   /**
@@ -559,18 +605,18 @@ export class AiDealerAgentService {
     progressId: number,
   ): Promise<AgentPlayerData> {
     const result = await this.agentPlayerDataModel
-      .findOne({ walletAddress })
+      .findOne({ walletAddress, progressId })
       .exec();
     if (!result) {
-      await this.createAgentFarmData({
+      const newRecord = await this.createAgentFarmData({
         walletAddress,
+        progressId: progressId,
         startTime: 0,
         duration: 0,
         isFarming: false,
         stakedGem: 0,
-        progressId,
       });
-      return this.agentPlayerDataModel.findOne({ walletAddress }).exec();
+      return newRecord;
     }
     return result;
   }
@@ -588,19 +634,20 @@ export class AiDealerAgentService {
   ): Promise<AgentPlayerData> {
     return this.agentPlayerDataModel
       .findOneAndUpdate(
-        { walletAddress },
+        { walletAddress, progressId: updateAgentFarmDto.progressId },
         { $set: updateAgentFarmDto },
-        { new: true },
+        { new: true, upsert: true },
       )
       .exec();
   }
 
   async boostAgent(
     walletAddress: string,
+    progress_id: number,
     duration: number,
   ): Promise<AgentPlayerData> {
     const currentData = await this.agentPlayerDataModel
-      .findOne({ walletAddress })
+      .findOne({ walletAddress, progressId: progress_id })
       .exec();
     if (!currentData) {
       throw new Error('No agent data found for this wallet address.');
@@ -608,11 +655,15 @@ export class AiDealerAgentService {
     currentData.startTime += duration;
 
     return await this.agentPlayerDataModel
-      .findOneAndUpdate({ walletAddress }, { $set: currentData }, { new: true })
+      .findOneAndUpdate(
+        { walletAddress, progressId: progress_id },
+        { $set: currentData },
+        { new: true },
+      )
       .exec();
   }
 
-  async deleteAgentFarmData(walletAddress: string): Promise<AgentPlayerData> {
-    return this.agentPlayerDataModel.findOneAndDelete({ walletAddress }).exec();
-  }
+  // async deleteAgentFarmData(walletAddress: string): Promise<AgentPlayerData> {
+  //   return this.agentPlayerDataModel.findOneAndDelete({ walletAddress }).exec();
+  // }
 }

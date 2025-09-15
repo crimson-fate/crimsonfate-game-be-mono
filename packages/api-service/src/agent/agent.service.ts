@@ -35,6 +35,8 @@ export class AgentService {
       progressId: progressId,
     });
 
+    console.log('agentProgress', agentProgress);
+
     if (!agentProgress) {
       throw new HttpException('Agent reward not found', HttpStatus.NOT_FOUND);
     }
@@ -63,6 +65,10 @@ export class AgentService {
       multiplier,
       saltNonce,
     });
+
+    // clear farming status
+    agentProgress.stakedGem = 0;
+    await agentProgress.save();
 
     return {
       multiplier,

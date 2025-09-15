@@ -5,10 +5,10 @@ export type AgentPlayerDataDocument = AgentPlayerData & Document;
 
 @Schema()
 export class AgentPlayerData {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   progressId: number;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   walletAddress: string;
 
   @Prop({ required: true, default: false })
@@ -34,3 +34,9 @@ export class AgentPlayerData {
 
 export const AgentPlayerDataSchema =
   SchemaFactory.createForClass(AgentPlayerData);
+
+// Ensure the combination of walletAddress and progressId is unique
+AgentPlayerDataSchema.index(
+  { walletAddress: 1, progressId: 1 },
+  { unique: true, name: 'uniq_wallet_progress' },
+);
