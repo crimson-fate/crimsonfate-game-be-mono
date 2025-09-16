@@ -363,14 +363,6 @@ export class AiAgentController {
         walletAddress,
         body.progressId,
       );
-      if (!data) {
-        const data = await this.aiDealerAgentService.createAgentFarmData({
-          walletAddress,
-          stakedGem: 0,
-          progressId: body.progressId,
-        });
-        return data;
-      }
       return data;
     } catch (error) {
       if (error instanceof HttpException) {
@@ -444,6 +436,7 @@ export class AiAgentController {
 
       const data = await this.aiDealerAgentService.boostAgent(
         walletAddress,
+        updateAgentFarmDto.progressId,
         updateAgentFarmDto.duration,
       );
       if (!data) {
@@ -461,34 +454,34 @@ export class AiAgentController {
     }
   }
 
-  @Delete('farm/:walletAddress')
-  @ApiOperation({ summary: 'Delete agent farm data' })
-  @ApiParam({
-    name: 'walletAddress',
-    description: 'Wallet address of the player',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Agent farm data deleted successfully',
-  })
-  async deleteAgentFarm(@Param('walletAddress') walletAddress: string) {
-    try {
-      const data =
-        await this.aiDealerAgentService.deleteAgentFarmData(walletAddress);
-      if (!data) {
-        throw new HttpException(
-          'Agent farm data not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      return data;
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
+  // @Delete('farm/:walletAddress')
+  // @ApiOperation({ summary: 'Delete agent farm data' })
+  // @ApiParam({
+  //   name: 'walletAddress',
+  //   description: 'Wallet address of the player',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Agent farm data deleted successfully',
+  // })
+  // async deleteAgentFarm(@Param('walletAddress') walletAddress: string) {
+  //   try {
+  //     const data =
+  //       await this.aiDealerAgentService.deleteAgentFarmData(walletAddress);
+  //     if (!data) {
+  //       throw new HttpException(
+  //         'Agent farm data not found',
+  //         HttpStatus.NOT_FOUND,
+  //       );
+  //     }
+  //     return data;
+  //   } catch (error) {
+  //     if (error instanceof HttpException) {
+  //       throw error;
+  //     }
+  //     throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+  //   }
+  // }
 
   @Delete('closeChat/:walletAddress')
   @ApiOperation({ summary: 'Delete chat history for a user' })
