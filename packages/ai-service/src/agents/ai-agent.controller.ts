@@ -158,6 +158,34 @@ export class AiAgentController {
     }
   }
 
+  @Post('normal/end')
+  @ApiOperation({ summary: 'End the chat' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat ended successfully',
+  })
+  async endChat(@Body() body: WalletDto): Promise<any> {
+    try {
+      console.log('Ending chat...');
+      await this.aiAgentService.reset(body.walletAddress);
+      await this.aiDealerAgentService.updateAgentFarmData(body.walletAddress, {
+        isFarming: false,
+        startTime: 0,
+        duration: 0,
+        itemCounts: null,
+        stakedGem: 0,
+        progressId: body.progressId,
+      });
+      return { message: 'Chat ended successfully' };
+    } catch (error) {
+      console.error('Error ending chat:', error);
+      throw new HttpException(
+        'An error occurred while processing your request',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('dealer/start')
   @ApiOperation({ summary: 'Start dealing with agent' })
   @ApiResponse({
@@ -387,6 +415,11 @@ export class AiAgentController {
     @Body() updateAgentFarmDto: UpdateAgentFarmDto,
   ) {
     try {
+      if (updateAgentFarmDto.duration > 0) {
+        updateAgentFarmDto.itemCounts = this.calculateItemCounts(
+          updateAgentFarmDto.duration,
+        );
+      }
       const data = await this.aiDealerAgentService.updateAgentFarmData(
         walletAddress,
         updateAgentFarmDto,
